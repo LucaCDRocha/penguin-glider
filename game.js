@@ -41,8 +41,8 @@ class PenguinGlider {
 		this.fishSpawnTimer = 0;
 		this.fishSpawnRate = 120; // spawn every 2 seconds at 60fps
 
-		// Water level (at middle of screen)
-		this.waterLevel = this.canvas.height / 2;
+		// Water level (will be calculated properly after canvas setup)
+		this.waterLevel = 400; // Default value, will be recalculated
 
 		// Particles for effects
 		this.particles = [];
@@ -279,6 +279,14 @@ class PenguinGlider {
 			this.handleResize();
 		});
 
+		// Add orientation change handler for mobile devices
+		window.addEventListener("orientationchange", () => {
+			// Small delay to ensure the new orientation dimensions are available
+			setTimeout(() => {
+				this.handleResize();
+			}, 100);
+		});
+
 		// Initial resize
 		this.handleResize();
 	}
@@ -286,16 +294,47 @@ class PenguinGlider {
 	handleResize() {
 		const canvas = this.canvas;
 
+		// Get actual viewport dimensions
+		const vw = window.innerWidth;
+		const vh = window.innerHeight;
+
 		// Set canvas size to full viewport
-		canvas.width = window.innerWidth;
-		canvas.height = window.innerHeight;
+		canvas.width = vw;
+		canvas.height = vh;
 
-		// Update canvas style to match
-		canvas.style.width = window.innerWidth + "px";
-		canvas.style.height = window.innerHeight + "px";
+		// Update canvas style to match exactly
+		canvas.style.width = vw + "px";
+		canvas.style.height = vh + "px";
 
-		// Update water level based on new height (at middle of screen)
-		this.waterLevel = canvas.height / 2;
+		// Calculate responsive water level based on screen size and orientation
+		const aspectRatio = vw / vh;
+		let waterLevelRatio;
+
+		if (aspectRatio > 1.5) {
+			// Wide screens (landscape) - water level around middle
+			waterLevelRatio = 0.5;
+		} else if (aspectRatio > 1.2) {
+			// Slightly wide screens - water level slightly lower
+			waterLevelRatio = 0.55;
+		} else if (aspectRatio > 0.8) {
+			// Square-ish screens - water level lower
+			waterLevelRatio = 0.6;
+		} else {
+			// Tall screens (mobile portrait) - water level much lower to give more gameplay space
+			waterLevelRatio = 0.65;
+		}
+
+		// Apply additional adjustment for very tall mobile screens
+		if (vh > vw * 1.8) {
+			waterLevelRatio = Math.min(0.7, waterLevelRatio + 0.05);
+		}
+
+		this.waterLevel = canvas.height * waterLevelRatio;
+
+		// Force a redraw
+		if (this.imagesReady) {
+			this.render();
+		}
 	}
 
 	setupEventListeners() {
@@ -650,11 +689,15 @@ class PenguinGlider {
 		this.camera.x += (this.camera.targetX - this.camera.x) * smoothing;
 		this.camera.y += (this.camera.targetY - this.camera.y) * smoothing;
 
+		// Calculate responsive camera bounds based on screen size
+		const skyVisibleHeight = Math.min(400, this.canvas.height * 0.4);
+		const waterBufferHeight = Math.max(100, this.canvas.height * 0.1);
+
 		// Prevent camera from going too high (keep some sky visible above mountains)
-		this.camera.y = Math.max(this.camera.y, this.waterLevel - 400);
+		this.camera.y = Math.max(this.camera.y, this.waterLevel - skyVisibleHeight);
 
 		// Prevent camera from going below water level
-		this.camera.y = Math.min(this.camera.y, this.waterLevel - this.canvas.height + 100);
+		this.camera.y = Math.min(this.camera.y, this.waterLevel - this.canvas.height + waterBufferHeight);
 	}
 
 	updateIcebergs(deltaMultiplier = 1) {
@@ -1047,8 +1090,10 @@ class PenguinGlider {
 		// Draw background mountains if image is loaded
 		if (this.imagesReady && this.images.moutain) {
 			// Draw repeating mountain background with parallax effect, positioned relative to icebergs
-			const mountainY = this.waterLevel - 500; // Lowered for better positioning
-			const mountainHeight = 225;
+			// Scale mountain distance based on screen height to maintain good proportions
+			const mountainDistance = Math.min(500, this.canvas.height * 0.6);
+			const mountainY = this.waterLevel - mountainDistance;
+			const mountainHeight = Math.min(225, this.canvas.height * 0.25);
 			const parallaxSpeed = 0.3; // Mountains move slower than camera
 			const parallaxX = this.camera.x * parallaxSpeed;
 

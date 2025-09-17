@@ -2,7 +2,9 @@
 <html lang="en">
 	<head>
 		<meta charset="UTF-8" />
-		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+		<meta
+			name="viewport"
+			content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
 		<title>Penguin Glider - Arctic Adventure</title>
 		<style>
 			* {
@@ -11,6 +13,7 @@
 				box-sizing: border-box;
 			}
 
+			html,
 			body {
 				margin: 0;
 				padding: 0;
@@ -20,6 +23,17 @@
 				touch-action: none; /* Prevent default touch behaviors */
 				user-select: none; /* Prevent text selection */
 				position: relative;
+				width: 100%;
+				height: 100%;
+				/* Prevent zoom on mobile */
+				-webkit-text-size-adjust: 100%;
+				-ms-text-size-adjust: 100%;
+			}
+
+			body {
+				position: fixed;
+				top: 0;
+				left: 0;
 				width: 100vw;
 				height: 100vh;
 			}
@@ -33,6 +47,11 @@
 				height: 100vh;
 				background: linear-gradient(to bottom, #87ceeb 0%, #4682b4 50%, #1e3a8a 100%);
 				z-index: 1;
+				/* Prevent canvas from being selectable */
+				-webkit-user-select: none;
+				-moz-user-select: none;
+				-ms-user-select: none;
+				user-select: none;
 			}
 
 			/* UI Elements overlay */
@@ -52,30 +71,33 @@
 				display: flex;
 				justify-content: space-between;
 				align-items: flex-start;
-				padding: 20px;
+				padding: max(20px, env(safe-area-inset-top, 20px)) 20px 20px 20px;
 				width: 100%;
+				gap: 20px;
 			}
 
 			.score {
-				font-size: 32px;
+				font-size: clamp(24px, 5vw, 32px);
 				font-weight: bold;
 				color: #ffd700;
 				text-shadow: 3px 3px 6px rgba(0, 0, 0, 0.8);
 				background: rgba(0, 0, 0, 0.3);
-				padding: 10px 20px;
+				padding: clamp(8px, 2vw, 10px) clamp(15px, 4vw, 20px);
 				border-radius: 15px;
 				backdrop-filter: blur(10px);
+				white-space: nowrap;
 			}
 
 			.instructions {
-				font-size: 18px;
+				font-size: clamp(14px, 3vw, 18px);
 				color: #e6f3ff;
 				text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.8);
 				background: rgba(0, 0, 0, 0.3);
-				padding: 10px 15px;
+				padding: clamp(8px, 2vw, 10px) clamp(12px, 3vw, 15px);
 				border-radius: 10px;
 				backdrop-filter: blur(10px);
-				max-width: 300px;
+				max-width: min(300px, 40vw);
+				line-height: 1.4;
 			}
 
 			.game-over {
@@ -85,7 +107,7 @@
 				transform: translate(-50%, -50%);
 				background: rgba(0, 0, 0, 0.9);
 				color: white;
-				padding: 40px;
+				padding: clamp(30px, 8vw, 40px);
 				border-radius: 20px;
 				text-align: center;
 				display: none;
@@ -94,22 +116,36 @@
 				border: 2px solid rgba(255, 255, 255, 0.1);
 				box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
 				pointer-events: auto;
+				max-width: 90vw;
+				max-height: 90vh;
+			}
+
+			.game-over h2 {
+				font-size: clamp(24px, 6vw, 32px);
+				margin-bottom: 15px;
+			}
+
+			.game-over p {
+				font-size: clamp(16px, 4vw, 18px);
+				margin-bottom: 10px;
 			}
 
 			.restart-btn {
 				background: #4a90e2;
 				color: white;
 				border: none;
-				padding: 15px 30px;
+				padding: clamp(12px, 3vw, 15px) clamp(25px, 6vw, 30px);
 				border-radius: 10px;
 				cursor: pointer;
-				font-size: 18px;
+				font-size: clamp(16px, 4vw, 18px);
 				margin-top: 20px;
 				transition: all 0.3s;
 				pointer-events: auto;
+				touch-action: manipulation;
 			}
 
-			.restart-btn:hover {
+			.restart-btn:hover,
+			.restart-btn:active {
 				background: #357abd;
 				transform: scale(1.05);
 			}
@@ -117,18 +153,18 @@
 			/* Mobile Controls */
 			.mobile-controls {
 				position: fixed;
-				bottom: 30px;
+				bottom: max(30px, env(safe-area-inset-bottom, 30px));
 				left: 50%;
 				transform: translateX(-50%);
 				display: none;
 				flex-direction: row;
 				justify-content: space-between;
 				align-items: center;
-				width: 90%;
-				max-width: 500px;
-				padding: 20px;
+				width: min(90vw, 500px);
+				padding: clamp(15px, 4vw, 20px);
 				z-index: 15;
 				pointer-events: none;
+				gap: 10px;
 			}
 
 			.control-button {
@@ -136,12 +172,11 @@
 				border: 2px solid #4a90e2;
 				border-radius: 15px;
 				color: white;
-				font-size: 20px;
+				font-size: clamp(18px, 4vw, 20px);
 				font-weight: bold;
-				padding: 20px;
-				margin: 5px;
-				min-width: 70px;
-				min-height: 70px;
+				padding: clamp(15px, 4vw, 20px);
+				min-width: clamp(60px, 15vw, 70px);
+				min-height: clamp(60px, 15vw, 70px);
 				display: flex;
 				align-items: center;
 				justify-content: center;
@@ -151,6 +186,7 @@
 				box-shadow: 0 6px 20px rgba(0, 0, 0, 0.4);
 				transition: all 0.1s;
 				pointer-events: auto;
+				flex-shrink: 0;
 			}
 
 			.control-button:active {
@@ -164,8 +200,9 @@
 				border-color: #ff8c00;
 				flex: 1;
 				margin: 0 15px;
-				min-height: 80px;
-				font-size: 22px;
+				min-height: clamp(70px, 18vw, 80px);
+				font-size: clamp(18px, 4vw, 22px);
+				max-width: 200px;
 			}
 
 			.jump-button:active {
@@ -179,7 +216,14 @@
 				}
 
 				.instructions {
-					font-size: 14px;
+					font-size: clamp(12px, 3vw, 16px);
+				}
+
+				/* Hide instructions on very small screens when controls are visible */
+				@media (max-height: 600px) {
+					.instructions {
+						display: none;
+					}
 				}
 			}
 
@@ -188,27 +232,80 @@
 				.mobile-controls {
 					display: flex;
 				}
-			}
 
-			/* Responsive design for smaller screens */
-			@media (max-width: 768px) {
-				.score {
-					font-size: 28px;
+				.top-ui {
+					flex-direction: column;
+					align-items: center;
+					gap: 10px;
 				}
 
 				.instructions {
-					font-size: 16px;
+					text-align: center;
+					max-width: 80vw;
+				}
+			}
+
+			/* Very small screens */
+			@media (max-width: 480px) {
+				.top-ui {
+					padding: 10px;
+				}
+
+				.score {
+					font-size: clamp(20px, 5vw, 24px);
+				}
+
+				.instructions {
+					font-size: clamp(12px, 3vw, 14px);
+				}
+
+				.mobile-controls {
+					bottom: 20px;
+					padding: 10px;
+					gap: 8px;
 				}
 
 				.control-button {
-					min-width: 60px;
-					min-height: 60px;
-					font-size: 18px;
+					min-width: clamp(50px, 12vw, 60px);
+					min-height: clamp(50px, 12vw, 60px);
+					font-size: clamp(16px, 3.5vw, 18px);
+					padding: clamp(10px, 3vw, 15px);
 				}
 
 				.jump-button {
-					min-height: 70px;
-					font-size: 20px;
+					min-height: clamp(60px, 15vw, 70px);
+					font-size: clamp(16px, 3.5vw, 20px);
+					margin: 0 8px;
+				}
+			}
+
+			/* Landscape orientation on mobile */
+			@media (max-height: 500px) and (orientation: landscape) {
+				.top-ui {
+					padding: 5px 20px;
+					flex-direction: row;
+					justify-content: space-between;
+				}
+
+				.instructions {
+					font-size: clamp(10px, 2vw, 14px);
+					max-width: 50vw;
+				}
+
+				.mobile-controls {
+					bottom: 10px;
+					padding: 5px;
+				}
+
+				.control-button {
+					min-width: clamp(40px, 8vw, 50px);
+					min-height: clamp(40px, 8vw, 50px);
+					font-size: clamp(14px, 2.5vw, 16px);
+				}
+
+				.jump-button {
+					min-height: clamp(45px, 10vw, 55px);
+					font-size: clamp(14px, 2.5vw, 18px);
 				}
 			}
 		</style>
