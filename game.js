@@ -103,6 +103,11 @@ class PenguinGlider {
 			"bubble.png",
 			"bottle.png",
 			"plastic-bag.png",
+			"cloud1.png",
+			"cloud2.png",
+			"cloud3.png",
+			"cloud4.png",
+			"cloud5.png",
 		];
 
 		this.totalImages = imageList.length;
@@ -162,6 +167,58 @@ class PenguinGlider {
 		this.ctx.drawImage(image, renderX, renderY, renderWidth, renderHeight);
 
 		return { x: renderX, y: renderY, width: renderWidth, height: renderHeight };
+	}
+
+	// Helper method to draw infinite cloud layers with parallax
+	drawInfiniteCloudLayer(parallaxSpeed, yOffset, scale, cloudTypes) {
+		// Calculate parallax offset - clouds move slower than camera for depth
+		const parallaxX = this.camera.x * parallaxSpeed;
+		const cloudY = this.waterLevel + yOffset;
+
+		// Calculate render bounds in world coordinates (accounting for camera position)
+		const renderBuffer = this.canvas.width;
+		const leftBound = this.camera.x - renderBuffer;
+		const rightBound = this.camera.x + this.canvas.width + renderBuffer;
+
+		// Base cloud size
+		const baseCloudWidth = 200 * scale;
+		const baseCloudHeight = 100 * scale;
+
+		// Cloud spacing
+		const cloudSpacing = baseCloudWidth * 1.5;
+
+		// Calculate tile positions based on parallax offset
+		const startTile = Math.floor((leftBound - parallaxX) / cloudSpacing);
+		const endTile = Math.ceil((rightBound - parallaxX) / cloudSpacing);
+
+		// Set cloud opacity for atmospheric effect
+		this.ctx.globalAlpha = 0.6;
+
+		// Draw clouds infinitely
+		for (let tile = startTile; tile <= endTile; tile++) {
+			// World position accounting for parallax
+			const x = parallaxX + tile * cloudSpacing;
+
+			// Use tile index to deterministically select cloud type and add variation
+			const cloudIndex = Math.abs(tile) % cloudTypes.length;
+			const cloudType = cloudTypes[cloudIndex];
+
+			// Add some vertical variation based on tile position
+			const verticalVariation = Math.sin(tile * 0.7) * 30 * scale;
+			const finalY = cloudY + verticalVariation;
+
+			// Add some size variation
+			const sizeVariation = 1 + Math.sin(tile * 1.3) * 0.3;
+			const cloudWidth = baseCloudWidth * sizeVariation;
+			const cloudHeight = baseCloudHeight * sizeVariation;
+
+			if (this.images[cloudType]) {
+				this.drawImagePreserveAspect(this.images[cloudType], x, finalY, cloudWidth, cloudHeight, "center");
+			}
+		}
+
+		// Reset opacity
+		this.ctx.globalAlpha = 1;
 	}
 
 	// Helper function to draw image filling the entire area while preserving aspect ratio (may crop)
@@ -1069,39 +1126,65 @@ class PenguinGlider {
 		// Apply camera transformation
 		this.ctx.translate(-this.camera.x, -this.camera.y);
 
-		// Draw sky gradient (extended for camera movement)
+		// Draw infinite sky gradient
 		const gradient = this.ctx.createLinearGradient(
-			this.camera.x,
+			0, // Use world coordinates for consistent gradient
 			this.camera.y,
-			this.camera.x,
+			0,
 			this.camera.y + this.canvas.height
 		);
 		gradient.addColorStop(0, "#87CEEB");
 		gradient.addColorStop(0.7, "#4682B4");
 		gradient.addColorStop(1, "#1E3A8A");
 		this.ctx.fillStyle = gradient;
-		this.ctx.fillRect(
-			this.camera.x - this.canvas.width,
-			this.camera.y - this.canvas.height,
-			this.canvas.width * 3,
-			this.canvas.height * 3
-		);
 
-		// Draw background mountains if image is loaded
+		// Calculate the area we need to fill (with generous buffer for infinite feel)
+		const renderBuffer = this.canvas.width * 2; // Large buffer for smooth infinite scrolling
+		const leftBound = this.camera.x - renderBuffer;
+		const rightBound = this.camera.x + this.canvas.width + renderBuffer;
+		const topBound = this.camera.y - renderBuffer;
+		const bottomBound = this.camera.y + this.canvas.height + renderBuffer;
+
+		this.ctx.fillRect(leftBound, topBound, rightBound - leftBound, bottomBound - topBound);
+
+		// Draw infinite cloud layers for depth and atmosphere
+		if (this.imagesReady) {
+			// Layer 1: Far background clouds (slowest parallax)
+			this.drawInfiniteCloudLayer(0.1, -this.canvas.height * 0.8, 0.15, ["cloud1", "cloud2"]);
+
+			// Layer 2: Mid background clouds (medium parallax)
+			this.drawInfiniteCloudLayer(0.2, -this.canvas.height * 0.6, 0.2, ["cloud3", "cloud4"]);
+
+			// Layer 3: Near background clouds (faster parallax)
+			this.drawInfiniteCloudLayer(0.25, -this.canvas.height * 0.4, 0.25, ["cloud5", "cloud1"]);
+		}
+
+		// Draw infinite background mountains if image is loaded
 		if (this.imagesReady && this.images.moutain) {
-			// Draw repeating mountain background with parallax effect, positioned relative to icebergs
-			// Scale mountain distance based on screen height to maintain good proportions
+			// Draw repeating mountain background with parallax effect
 			const mountainDistance = Math.min(500, this.canvas.height * 0.6);
 			const mountainY = this.waterLevel - mountainDistance;
 			const mountainHeight = Math.min(225, this.canvas.height * 0.25);
-			const parallaxSpeed = 0.3; // Mountains move slower than camera
+			const parallaxSpeed = 0.3; // Mountains move slower than camera for depth effect
 			const parallaxX = this.camera.x * parallaxSpeed;
 
 			// Calculate mountain width based on aspect ratio
 			const mountainAspect = this.images.moutain.naturalWidth / this.images.moutain.naturalHeight;
 			const mountainWidth = mountainHeight * mountainAspect;
 
-			for (let x = parallaxX - this.canvas.width; x < parallaxX + this.canvas.width * 2; x += mountainWidth) {
+			// Calculate render bounds in world coordinates (accounting for camera position)
+			const renderBuffer = this.canvas.width;
+			const leftBound = this.camera.x - renderBuffer;
+			const rightBound = this.camera.x + this.canvas.width + renderBuffer;
+
+			// Calculate the starting tile position based on parallax offset
+			const startTile = Math.floor((leftBound - parallaxX) / mountainWidth);
+			const endTile = Math.ceil((rightBound - parallaxX) / mountainWidth);
+
+			// Draw mountain tiles for infinite repetition
+			for (let tile = startTile; tile <= endTile; tile++) {
+				// World position accounting for parallax
+				const x = parallaxX + tile * mountainWidth;
 				this.drawImagePreserveAspect(this.images.moutain, x, mountainY, mountainWidth, mountainHeight, "bottom");
 			}
 		}
@@ -1177,7 +1260,7 @@ class PenguinGlider {
 		// Draw penguin
 		this.drawPenguin();
 
-		// Draw water in foreground (premier plan) - extended for camera movement
+		// Draw infinite water in foreground with proper tiling
 		if (this.imagesReady && this.images.water) {
 			// Draw repeating water texture using natural image dimensions with reduced opacity
 			this.ctx.globalAlpha = 0.4; // Reduce opacity to 40%
@@ -1185,54 +1268,80 @@ class PenguinGlider {
 			const waterWidth = waterImage.naturalWidth;
 			const waterHeight = waterImage.naturalHeight;
 
-			// Calculate how many tiles we need to cover the visible area
-			const startX = this.camera.x - this.canvas.width;
-			const endX = this.camera.x + this.canvas.width * 2;
-			const startY = this.waterLevel;
-			const endY = this.waterLevel + this.canvas.height;
+			// Calculate render bounds with buffer for infinite scrolling
+			const renderBuffer = this.canvas.width;
+			const leftBound = this.camera.x - this.canvas.width - renderBuffer;
+			const rightBound = this.camera.x + this.canvas.width + renderBuffer;
+			const topBound = this.waterLevel;
+			const bottomBound = this.waterLevel + this.canvas.height + renderBuffer;
 
-			// Tile the water image to fill the area
-			for (let x = startX - (startX % waterWidth); x < endX; x += waterWidth) {
-				for (let y = startY - (startY % waterHeight); y < endY; y += waterHeight) {
+			// Calculate tile positions for seamless infinite tiling
+			const startTileX = Math.floor(leftBound / waterWidth);
+			const endTileX = Math.ceil(rightBound / waterWidth);
+			const startTileY = Math.floor(topBound / waterHeight);
+			const endTileY = Math.ceil(bottomBound / waterHeight);
+
+			// Tile the water image to fill the area infinitely
+			for (let tileX = startTileX; tileX <= endTileX; tileX++) {
+				for (let tileY = startTileY; tileY <= endTileY; tileY++) {
+					const x = tileX * waterWidth;
+					const y = tileY * waterHeight;
 					this.ctx.drawImage(waterImage, x, y, waterWidth, waterHeight);
 				}
 			}
 			this.ctx.globalAlpha = 1; // Reset opacity
 		} else {
-			// Fallback: solid color water with reduced opacity
+			// Fallback: infinite solid color water
 			this.ctx.globalAlpha = 0.4;
 			this.ctx.fillStyle = "#1E3A8A";
+			const renderBuffer = this.canvas.width * 2;
 			this.ctx.fillRect(
-				this.camera.x - this.canvas.width,
+				this.camera.x - this.canvas.width - renderBuffer,
 				this.waterLevel,
-				this.canvas.width * 3,
-				this.canvas.height
+				this.canvas.width + renderBuffer * 2,
+				this.canvas.height + renderBuffer
 			);
 			this.ctx.globalAlpha = 1; // Reset opacity
 		}
 
-		// Draw water waves in foreground (extended for camera)
+		// Draw infinite water waves in foreground
 		if (this.imagesReady && this.images.waves) {
 			// Draw wave overlay on top of water with preserved aspect ratio
 			const waveHeight = 30;
 			const waveAspect = this.images.waves.naturalWidth / this.images.waves.naturalHeight;
 			const waveWidth = waveHeight * waveAspect;
 
-			for (let x = this.camera.x - this.canvas.width; x < this.camera.x + this.canvas.width * 2; x += waveWidth) {
+			// Calculate render bounds in world coordinates (accounting for camera position)
+			const renderBuffer = this.canvas.width;
+			const leftBound = this.camera.x - renderBuffer;
+			const rightBound = this.camera.x + this.canvas.width + renderBuffer;
+
+			// Calculate tile positions for seamless wave repetition
+			const startTile = Math.floor(leftBound / waveWidth);
+			const endTile = Math.ceil(rightBound / waveWidth);
+
+			// Draw wave tiles infinitely
+			for (let tile = startTile; tile <= endTile; tile++) {
+				const x = tile * waveWidth;
 				const waveY = this.waterLevel + Math.sin((x + Date.now() * 0.001) * 0.01) * 5;
 				this.drawImagePreserveAspect(this.images.waves, x, waveY, waveWidth, waveHeight, "center");
 			}
 		} else {
-			// Fallback: drawn waves
+			// Fallback: infinite drawn waves
 			this.ctx.strokeStyle = "#4682B4";
 			this.ctx.lineWidth = 3;
 			this.ctx.beginPath();
-			const waveStart = this.camera.x - 100;
-			const waveEnd = this.camera.x + this.canvas.width + 100;
+
+			const renderBuffer = this.canvas.width * 2;
+			const waveStart = this.camera.x - renderBuffer;
+			const waveEnd = this.camera.x + this.canvas.width + renderBuffer;
+
+			let firstPoint = true;
 			for (let x = waveStart; x < waveEnd; x += 20) {
 				const y = this.waterLevel + Math.sin(x + Date.now() * 0.005) * 3;
-				if (x === waveStart) {
+				if (firstPoint) {
 					this.ctx.moveTo(x, y);
+					firstPoint = false;
 				} else {
 					this.ctx.lineTo(x, y);
 				}
