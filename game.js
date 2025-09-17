@@ -1682,17 +1682,11 @@ class PenguinGlider {
 // Initialize game
 let game;
 
-function startGame() {
-	game = new PenguinGlider();
-}
-
 function restartGame() {
 	if (game) {
 		game.restart();
-	} else {
-		startGame();
 	}
 }
 
-// Start the game when page loads
-window.addEventListener("load", startGame);
+// Game will be initialized when start button is clicked
+// No auto-start - wait for user interaction

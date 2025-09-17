@@ -120,6 +120,63 @@
 				max-height: 90vh;
 			}
 
+			/* Start Screen */
+			.start-screen {
+				position: fixed;
+				top: 0;
+				left: 0;
+				width: 100vw;
+				height: 100vh;
+				background: linear-gradient(to bottom, #87ceeb 0%, #4682b4 50%, #1e3a8a 100%);
+				color: white;
+				display: flex;
+				flex-direction: column;
+				justify-content: center;
+				align-items: center;
+				z-index: 30;
+				text-align: center;
+				padding: 20px;
+			}
+
+			.start-screen h1 {
+				font-size: clamp(32px, 8vw, 48px);
+				margin-bottom: 30px;
+				text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+			}
+
+			.game-instructions {
+				font-size: clamp(16px, 4vw, 20px);
+				line-height: 1.6;
+				margin-bottom: 40px;
+				max-width: 600px;
+				background: rgba(0, 0, 0, 0.3);
+				padding: 20px;
+				border-radius: 15px;
+				backdrop-filter: blur(10px);
+			}
+
+			.play-button {
+				background: #4a90e2;
+				color: white;
+				border: none;
+				padding: clamp(15px, 4vw, 20px) clamp(30px, 8vw, 40px);
+				border-radius: 15px;
+				cursor: pointer;
+				font-size: clamp(18px, 5vw, 24px);
+				font-weight: bold;
+				transition: all 0.3s;
+				pointer-events: auto;
+				touch-action: manipulation;
+				box-shadow: 0 6px 20px rgba(74, 144, 226, 0.4);
+			}
+
+			.play-button:hover,
+			.play-button:active {
+				background: #357abd;
+				transform: scale(1.05);
+				box-shadow: 0 8px 25px rgba(74, 144, 226, 0.6);
+			}
+
 			.game-over h2 {
 				font-size: clamp(24px, 6vw, 32px);
 				margin-bottom: 15px;
@@ -311,16 +368,29 @@
 		</style>
 	</head>
 	<body>
+		<!-- Start Screen -->
+		<div class="start-screen" id="startScreen">
+			<h1>🐧 Penguin Glider</h1>
+			<div class="game-instructions">
+				<p><strong>Welcome to Arctic Adventure!</strong></p>
+				<p>🎮 <strong>Controls:</strong></p>
+				<p>• Use <strong>ARROW KEYS</strong> or <strong>WASD</strong> to move</p>
+				<p>• On mobile: Use <strong>TOUCH CONTROLS</strong></p>
+				<p>• <strong>SPACE</strong> or <strong>UP ARROW</strong> to jump/glide</p>
+				<br />
+				<p>🎯 <strong>Goal:</strong></p>
+				<p>Glide from iceberg to iceberg and collect fish for points! 🐟</p>
+				<p>Don't fall into the icy water! ❄️</p>
+			</div>
+			<button class="play-button" onclick="startGame()">🎮 PLAY GAME</button>
+		</div>
+
 		<canvas id="gameCanvas"></canvas>
 
 		<!-- UI Overlay -->
 		<div class="ui-overlay">
 			<div class="top-ui">
 				<div class="score">Score: <span id="score">0</span></div>
-				<div class="instructions">
-					🐧 Use ARROW KEYS, WASD, or TOUCH CONTROLS to play<br />
-					Glide from iceberg to iceberg and collect fish for points! 🐟
-				</div>
 			</div>
 		</div>
 
@@ -340,5 +410,40 @@
 		</div>
 
 		<script src="game.js"></script>
+		<script>
+			// Start screen functionality
+			function startGame() {
+				const startScreen = document.getElementById("startScreen");
+				startScreen.style.display = "none";
+
+				// Initialize and start the game
+				if (typeof game === "undefined") {
+					game = new PenguinGlider();
+				} else {
+					game.restart();
+				}
+			}
+
+			// Restart game directly without showing start screen
+			function restartGame() {
+				const gameOver = document.getElementById("gameOver");
+				gameOver.style.display = "none";
+
+				if (game) {
+					game.restart();
+				} else {
+					game = new PenguinGlider();
+				}
+			}
+
+			// Function to return to start screen (if needed)
+			function returnToStart() {
+				const startScreen = document.getElementById("startScreen");
+				startScreen.style.display = "flex";
+
+				const gameOver = document.getElementById("gameOver");
+				gameOver.style.display = "none";
+			}
+		</script>
 	</body>
 </html>
