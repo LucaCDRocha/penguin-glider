@@ -11,10 +11,10 @@ class PenguinGlider {
 		this.score = 0;
 		this.keys = {};
 
-		// Penguin properties
+		// Penguin properties (will be positioned on first iceberg after initialization)
 		this.penguin = {
 			x: 100,
-			y: 300,
+			y: 150,
 			width: 60,
 			height: 60,
 			velocityX: 0,
@@ -41,8 +41,8 @@ class PenguinGlider {
 		this.fishSpawnTimer = 0;
 		this.fishSpawnRate = 120; // spawn every 2 seconds at 60fps
 
-		// Water level (lower than before)
-		this.waterLevel = this.canvas.height - 20;
+		// Water level (at middle of screen)
+		this.waterLevel = this.canvas.height / 2;
 
 		// Particles for effects
 		this.particles = [];
@@ -265,6 +265,7 @@ class PenguinGlider {
 		this.setupEventListeners();
 		this.setupResponsiveCanvas();
 		this.generateInitialIcebergs();
+		this.positionPenguinOnFirstIceberg();
 		this.generateSnowflakes();
 		this.gameLoop();
 	}
@@ -293,8 +294,8 @@ class PenguinGlider {
 		canvas.style.width = window.innerWidth + "px";
 		canvas.style.height = window.innerHeight + "px";
 
-		// Update water level based on new height (lower than before)
-		this.waterLevel = canvas.height - 20;
+		// Update water level based on new height (at middle of screen)
+		this.waterLevel = canvas.height / 2;
 	}
 
 	setupEventListeners() {
@@ -395,8 +396,8 @@ class PenguinGlider {
 		}
 
 		this.icebergs.push({
-			x: 50,
-			y: this.waterLevel - startHeight,
+			x: 100 - startWidth / 2, // Center iceberg with penguin x position
+			y: this.waterLevel - startHeight - 20, // Position slightly above water level
 			width: startWidth,
 			height: startHeight,
 			imageType: 1, // Use iceberg1 for starting platform
@@ -406,6 +407,16 @@ class PenguinGlider {
 		for (let i = 1; i < 5; i++) {
 			// Increased spacing for larger icebergs
 			this.generateIceberg(50 + 250 * i); // 250 pixel spacing for more breathing room
+		}
+	}
+
+	positionPenguinOnFirstIceberg() {
+		// Position penguin on top of the first iceberg
+		if (this.icebergs.length > 0) {
+			const firstIceberg = this.icebergs[0];
+			this.penguin.x = firstIceberg.x + firstIceberg.width / 2 - this.penguin.width / 2; // Center on iceberg
+			this.penguin.y = firstIceberg.y - this.penguin.height; // On top of iceberg
+			this.penguin.onIceberg = true; // Start on iceberg
 		}
 	}
 
@@ -428,9 +439,9 @@ class PenguinGlider {
 		const lastIceberg = this.icebergs[this.icebergs.length - 1];
 		const lastIcebergTop = lastIceberg ? lastIceberg.y : this.waterLevel - 60;
 
-		// Keep vertical variation within reachable range
-		const minY = Math.max(this.waterLevel - 150, lastIcebergTop - maxVerticalReach);
-		const maxY = Math.min(this.waterLevel - 40, lastIcebergTop + 60);
+		// Keep icebergs much higher above water level with good variation
+		const minY = Math.max(this.waterLevel - 400, lastIcebergTop - maxVerticalReach);
+		const maxY = Math.min(this.waterLevel - 200, lastIcebergTop + 60);
 
 		// Generate iceberg with image-based dimensions if available
 		const imageType = Math.floor(Math.random() * 4) + 1;
@@ -904,10 +915,13 @@ class PenguinGlider {
 	}
 
 	createJumpParticles() {
+		// Match the visual offset of the penguin
+		const visualOffset = this.imagesReady && this.images.penguin ? 30 : 8;
+
 		for (let i = 0; i < 8; i++) {
 			this.particles.push({
 				x: this.penguin.x + this.penguin.width / 2,
-				y: this.penguin.y + this.penguin.height,
+				y: this.penguin.y + this.penguin.height + visualOffset, // Apply visual offset
 				velocityX: (Math.random() - 0.5) * 6,
 				velocityY: Math.random() * -3,
 				life: 30,
@@ -917,11 +931,14 @@ class PenguinGlider {
 	}
 
 	createSlipParticles() {
+		// Match the visual offset of the penguin
+		const visualOffset = this.imagesReady && this.images.penguin ? 30 : 8;
+
 		// Create ice particles when sliding
 		for (let i = 0; i < 3; i++) {
 			this.particles.push({
 				x: this.penguin.x + this.penguin.width / 2 + (Math.random() - 0.5) * this.penguin.width,
-				y: this.penguin.y + this.penguin.height - 5,
+				y: this.penguin.y + this.penguin.height + visualOffset - 5, // Apply visual offset
 				velocityX: -this.penguin.velocityX * 0.5 + (Math.random() - 0.5) * 2,
 				velocityY: Math.random() * -1 - 0.5,
 				life: 20,
@@ -1059,69 +1076,6 @@ class PenguinGlider {
 			}
 		}
 
-		// Draw water (extended for camera movement)
-		if (this.imagesReady && this.images.water) {
-			// Draw repeating water texture using natural image dimensions with reduced opacity
-			this.ctx.globalAlpha = 0.7; // Reduce opacity to 70%
-			const waterImage = this.images.water;
-			const waterWidth = waterImage.naturalWidth;
-			const waterHeight = waterImage.naturalHeight;
-
-			// Calculate how many tiles we need to cover the visible area
-			const startX = this.camera.x - this.canvas.width;
-			const endX = this.camera.x + this.canvas.width * 2;
-			const startY = this.waterLevel;
-			const endY = this.waterLevel + this.canvas.height;
-
-			// Tile the water image to fill the area
-			for (let x = startX - (startX % waterWidth); x < endX; x += waterWidth) {
-				for (let y = startY - (startY % waterHeight); y < endY; y += waterHeight) {
-					this.ctx.drawImage(waterImage, x, y, waterWidth, waterHeight);
-				}
-			}
-			this.ctx.globalAlpha = 1; // Reset opacity
-		} else {
-			// Fallback: solid color water with reduced opacity
-			this.ctx.globalAlpha = 0.7;
-			this.ctx.fillStyle = "#1E3A8A";
-			this.ctx.fillRect(
-				this.camera.x - this.canvas.width,
-				this.waterLevel,
-				this.canvas.width * 3,
-				this.canvas.height
-			);
-			this.ctx.globalAlpha = 1; // Reset opacity
-		}
-
-		// Draw water waves (extended for camera)
-		if (this.imagesReady && this.images.waves) {
-			// Draw wave overlay on top of water with preserved aspect ratio
-			const waveHeight = 30;
-			const waveAspect = this.images.waves.naturalWidth / this.images.waves.naturalHeight;
-			const waveWidth = waveHeight * waveAspect;
-
-			for (let x = this.camera.x - this.canvas.width; x < this.camera.x + this.canvas.width * 2; x += waveWidth) {
-				const waveY = this.waterLevel + Math.sin((x + Date.now() * 0.001) * 0.01) * 5;
-				this.drawImagePreserveAspect(this.images.waves, x, waveY, waveWidth, waveHeight, "center");
-			}
-		} else {
-			// Fallback: drawn waves
-			this.ctx.strokeStyle = "#4682B4";
-			this.ctx.lineWidth = 3;
-			this.ctx.beginPath();
-			const waveStart = this.camera.x - 100;
-			const waveEnd = this.camera.x + this.canvas.width + 100;
-			for (let x = waveStart; x < waveEnd; x += 20) {
-				const y = this.waterLevel + Math.sin(x + Date.now() * 0.005) * 3;
-				if (x === waveStart) {
-					this.ctx.moveTo(x, y);
-				} else {
-					this.ctx.lineTo(x, y);
-				}
-			}
-			this.ctx.stroke();
-		}
-
 		// Draw icebergs
 		for (let iceberg of this.icebergs) {
 			// Use iceberg image if loaded, otherwise fall back to drawn iceberg
@@ -1176,6 +1130,69 @@ class PenguinGlider {
 
 		// Draw penguin
 		this.drawPenguin();
+
+		// Draw water in foreground (premier plan) - extended for camera movement
+		if (this.imagesReady && this.images.water) {
+			// Draw repeating water texture using natural image dimensions with reduced opacity
+			this.ctx.globalAlpha = 0.7; // Reduce opacity to 70%
+			const waterImage = this.images.water;
+			const waterWidth = waterImage.naturalWidth;
+			const waterHeight = waterImage.naturalHeight;
+
+			// Calculate how many tiles we need to cover the visible area
+			const startX = this.camera.x - this.canvas.width;
+			const endX = this.camera.x + this.canvas.width * 2;
+			const startY = this.waterLevel;
+			const endY = this.waterLevel + this.canvas.height;
+
+			// Tile the water image to fill the area
+			for (let x = startX - (startX % waterWidth); x < endX; x += waterWidth) {
+				for (let y = startY - (startY % waterHeight); y < endY; y += waterHeight) {
+					this.ctx.drawImage(waterImage, x, y, waterWidth, waterHeight);
+				}
+			}
+			this.ctx.globalAlpha = 1; // Reset opacity
+		} else {
+			// Fallback: solid color water with reduced opacity
+			this.ctx.globalAlpha = 0.7;
+			this.ctx.fillStyle = "#1E3A8A";
+			this.ctx.fillRect(
+				this.camera.x - this.canvas.width,
+				this.waterLevel,
+				this.canvas.width * 3,
+				this.canvas.height
+			);
+			this.ctx.globalAlpha = 1; // Reset opacity
+		}
+
+		// Draw water waves in foreground (extended for camera)
+		if (this.imagesReady && this.images.waves) {
+			// Draw wave overlay on top of water with preserved aspect ratio
+			const waveHeight = 30;
+			const waveAspect = this.images.waves.naturalWidth / this.images.waves.naturalHeight;
+			const waveWidth = waveHeight * waveAspect;
+
+			for (let x = this.camera.x - this.canvas.width; x < this.camera.x + this.canvas.width * 2; x += waveWidth) {
+				const waveY = this.waterLevel + Math.sin((x + Date.now() * 0.001) * 0.01) * 5;
+				this.drawImagePreserveAspect(this.images.waves, x, waveY, waveWidth, waveHeight, "center");
+			}
+		} else {
+			// Fallback: drawn waves
+			this.ctx.strokeStyle = "#4682B4";
+			this.ctx.lineWidth = 3;
+			this.ctx.beginPath();
+			const waveStart = this.camera.x - 100;
+			const waveEnd = this.camera.x + this.canvas.width + 100;
+			for (let x = waveStart; x < waveEnd; x += 20) {
+				const y = this.waterLevel + Math.sin(x + Date.now() * 0.005) * 3;
+				if (x === waveStart) {
+					this.ctx.moveTo(x, y);
+				} else {
+					this.ctx.lineTo(x, y);
+				}
+			}
+			this.ctx.stroke();
+		}
 
 		// Restore context (end camera transformation)
 		this.ctx.restore();
