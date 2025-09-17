@@ -977,6 +977,7 @@ class PenguinGlider {
 		this.camera.targetY = 0;
 
 		this.generateInitialIcebergs();
+		this.positionPenguinOnFirstIceberg(); // Position penguin on first iceberg after restart
 		this.generateSnowflakes(); // Regenerate snowflakes for new camera position
 		this.gameOverElement.style.display = "none";
 		this.scoreElement.textContent = this.score;
