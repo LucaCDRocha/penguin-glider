@@ -14,7 +14,7 @@ class PenguinGlider {
 		// Penguin properties (will be positioned on first iceberg after initialization)
 		this.penguin = {
 			x: 100,
-			y: 150,
+			y: 0, // Will be set relative to water level when icebergs are generated
 			width: 60,
 			height: 60,
 			velocityX: 0,
@@ -650,8 +650,8 @@ class PenguinGlider {
 		this.camera.x += (this.camera.targetX - this.camera.x) * smoothing;
 		this.camera.y += (this.camera.targetY - this.camera.y) * smoothing;
 
-		// Prevent camera from going too high (keep some sky visible)
-		this.camera.y = Math.max(this.camera.y, -100);
+		// Prevent camera from going too high (keep some sky visible above mountains)
+		this.camera.y = Math.max(this.camera.y, this.waterLevel - 400);
 
 		// Prevent camera from going below water level
 		this.camera.y = Math.min(this.camera.y, this.waterLevel - this.canvas.height + 100);
