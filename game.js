@@ -130,6 +130,63 @@ class PenguinGlider {
 		});
 	}
 
+	// Helper function to draw image with preserved aspect ratio
+	drawImagePreserveAspect(image, x, y, maxWidth, maxHeight, alignment = "center") {
+		const imageAspect = image.naturalWidth / image.naturalHeight;
+		const targetAspect = maxWidth / maxHeight;
+
+		let renderWidth, renderHeight;
+
+		if (imageAspect > targetAspect) {
+			// Image is wider - fit to width
+			renderWidth = maxWidth;
+			renderHeight = maxWidth / imageAspect;
+		} else {
+			// Image is taller - fit to height
+			renderHeight = maxHeight;
+			renderWidth = maxHeight * imageAspect;
+		}
+
+		// Calculate position based on alignment
+		let renderX = x;
+		let renderY = y;
+
+		if (alignment === "center") {
+			renderX = x + (maxWidth - renderWidth) / 2;
+			renderY = y + (maxHeight - renderHeight) / 2;
+		} else if (alignment === "bottom") {
+			renderX = x + (maxWidth - renderWidth) / 2;
+			renderY = y + (maxHeight - renderHeight);
+		}
+
+		this.ctx.drawImage(image, renderX, renderY, renderWidth, renderHeight);
+
+		return { x: renderX, y: renderY, width: renderWidth, height: renderHeight };
+	}
+
+	// Helper function to draw image filling the entire area while preserving aspect ratio (may crop)
+	drawImageFillArea(image, x, y, width, height) {
+		const imageAspect = image.naturalWidth / image.naturalHeight;
+		const targetAspect = width / height;
+
+		let sourceX = 0,
+			sourceY = 0,
+			sourceWidth = image.naturalWidth,
+			sourceHeight = image.naturalHeight;
+
+		if (imageAspect > targetAspect) {
+			// Image is wider - crop horizontally
+			sourceWidth = image.naturalHeight * targetAspect;
+			sourceX = (image.naturalWidth - sourceWidth) / 2;
+		} else {
+			// Image is taller - crop vertically
+			sourceHeight = image.naturalWidth / targetAspect;
+			sourceY = (image.naturalHeight - sourceHeight) / 2;
+		}
+
+		this.ctx.drawImage(image, sourceX, sourceY, sourceWidth, sourceHeight, x, y, width, height);
+	}
+
 	playSound(type) {
 		if (!this.audioContext) return;
 
@@ -944,8 +1001,12 @@ class PenguinGlider {
 			const parallaxSpeed = 0.3; // Mountains move slower than camera
 			const parallaxX = this.camera.x * parallaxSpeed;
 
-			for (let x = parallaxX - this.canvas.width; x < parallaxX + this.canvas.width * 2; x += 400) {
-				this.ctx.drawImage(this.images.moutain, x, mountainY, 400, mountainHeight);
+			// Calculate mountain width based on aspect ratio
+			const mountainAspect = this.images.moutain.naturalWidth / this.images.moutain.naturalHeight;
+			const mountainWidth = mountainHeight * mountainAspect;
+
+			for (let x = parallaxX - this.canvas.width; x < parallaxX + this.canvas.width * 2; x += mountainWidth) {
+				this.drawImagePreserveAspect(this.images.moutain, x, mountainY, mountainWidth, mountainHeight, "bottom");
 			}
 		}
 
@@ -989,10 +1050,14 @@ class PenguinGlider {
 
 		// Draw water waves (extended for camera)
 		if (this.imagesReady && this.images.waves) {
-			// Draw wave overlay on top of water
-			for (let x = this.camera.x - this.canvas.width; x < this.camera.x + this.canvas.width * 2; x += 100) {
+			// Draw wave overlay on top of water with preserved aspect ratio
+			const waveHeight = 20;
+			const waveAspect = this.images.waves.naturalWidth / this.images.waves.naturalHeight;
+			const waveWidth = waveHeight * waveAspect;
+
+			for (let x = this.camera.x - this.canvas.width; x < this.camera.x + this.canvas.width * 2; x += waveWidth) {
 				const waveY = this.waterLevel + Math.sin((x + Date.now() * 0.001) * 0.01) * 5;
-				this.ctx.drawImage(this.images.waves, x, waveY, 100, 20);
+				this.drawImagePreserveAspect(this.images.waves, x, waveY, waveWidth, waveHeight, "center");
 			}
 		} else {
 			// Fallback: drawn waves
@@ -1016,7 +1081,7 @@ class PenguinGlider {
 		for (let iceberg of this.icebergs) {
 			// Use iceberg image if loaded, otherwise fall back to drawn iceberg
 			if (this.imagesReady && this.images[`iceberg${iceberg.imageType}`]) {
-				this.ctx.drawImage(
+				this.drawImageFillArea(
 					this.images[`iceberg${iceberg.imageType}`],
 					iceberg.x,
 					iceberg.y,
@@ -1054,7 +1119,7 @@ class PenguinGlider {
 			if (this.imagesReady && this.images.bubble && particle.color.includes("180")) {
 				// Use bubble image for blue-ish particles (fish collection)
 				this.ctx.globalAlpha = 0.7;
-				this.ctx.drawImage(this.images.bubble, particle.x - 4, particle.y - 4, 8, 8);
+				this.drawImagePreserveAspect(this.images.bubble, particle.x - 4, particle.y - 4, 8, 8, "center");
 				this.ctx.globalAlpha = 1;
 			} else {
 				// Fallback: simple colored rectangles
@@ -1078,7 +1143,7 @@ class PenguinGlider {
 
 		// Use penguin image if loaded, otherwise fall back to drawn penguin
 		if (this.imagesReady && this.images.penguin) {
-			this.ctx.drawImage(this.images.penguin, x, y, w, h);
+			this.drawImagePreserveAspect(this.images.penguin, x, y, w, h, "bottom");
 		} else {
 			// Fallback: Penguin body (black)
 			this.ctx.fillStyle = "#2C2C2C";
@@ -1156,7 +1221,7 @@ class PenguinGlider {
 
 		// Use fish image if loaded, otherwise fall back to drawn fish
 		if (this.imagesReady && this.images[`fish${fish.imageType}`]) {
-			this.ctx.drawImage(this.images[`fish${fish.imageType}`], x, y, w, h);
+			this.drawImagePreserveAspect(this.images[`fish${fish.imageType}`], x, y, w, h, "center");
 		} else {
 			// Fallback: Fish body (main color)
 			this.ctx.fillStyle = "#FF6B6B";
