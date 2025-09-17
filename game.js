@@ -1160,9 +1160,9 @@ class PenguinGlider {
 			0,
 			this.camera.y + this.canvas.height
 		);
-		gradient.addColorStop(0, "#87CEEB");
-		gradient.addColorStop(0.7, "#4682B4");
-		gradient.addColorStop(1, "#1E3A8A");
+		gradient.addColorStop(0, "#6BA6CD"); // Darker sky blue
+		gradient.addColorStop(0.7, "#36648B"); // Darker steel blue
+		gradient.addColorStop(1, "#0F1F4A"); // Much darker blue
 		this.ctx.fillStyle = gradient;
 
 		// Calculate the area we need to fill (with generous buffer for infinite feel)
@@ -1228,6 +1228,30 @@ class PenguinGlider {
 				this.ctx.fill();
 			}
 		}
+
+		// Add full-screen atmospheric gradient overlay (dark at bottom, light at top)
+		// This creates depth and makes icebergs stand out while staying behind them
+		const fullScreenGradient = this.ctx.createLinearGradient(
+			0,
+			this.camera.y, // Top of screen
+			0,
+			this.camera.y + this.canvas.height // Bottom of screen
+		);
+		fullScreenGradient.addColorStop(0, "rgba(200, 220, 240, 0.08)"); // Light at top
+		fullScreenGradient.addColorStop(0.3, "rgba(150, 180, 210, 0.15)"); // Medium light
+		fullScreenGradient.addColorStop(0.7, "rgba(100, 130, 160, 0.25)"); // Medium dark
+		fullScreenGradient.addColorStop(1, "rgba(60, 80, 110, 0.35)"); // Dark at bottom
+
+		this.ctx.fillStyle = fullScreenGradient;
+
+		// Apply gradient overlay to entire visible screen area
+		const gradientRenderBuffer = this.canvas.width * 2;
+		this.ctx.fillRect(
+			this.camera.x - gradientRenderBuffer,
+			this.camera.y,
+			this.canvas.width + gradientRenderBuffer * 2,
+			this.canvas.height
+		);
 
 		// Draw icebergs
 		for (let iceberg of this.icebergs) {
@@ -1317,7 +1341,7 @@ class PenguinGlider {
 		} else {
 			// Fallback: infinite solid color water
 			this.ctx.globalAlpha = 0.4;
-			this.ctx.fillStyle = "#1E3A8A";
+			this.ctx.fillStyle = "#0F1F4A"; // Darker water to match sky
 			const renderBuffer = this.canvas.width * 2;
 			this.ctx.fillRect(
 				this.camera.x - this.canvas.width - renderBuffer,
@@ -1352,7 +1376,7 @@ class PenguinGlider {
 			}
 		} else {
 			// Fallback: infinite drawn waves
-			this.ctx.strokeStyle = "#4682B4";
+			this.ctx.strokeStyle = "#36648B"; // Darker wave color to match sky
 			this.ctx.lineWidth = 3;
 			this.ctx.beginPath();
 
