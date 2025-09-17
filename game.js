@@ -439,9 +439,9 @@ class PenguinGlider {
 		const lastIceberg = this.icebergs[this.icebergs.length - 1];
 		const lastIcebergTop = lastIceberg ? lastIceberg.y : this.waterLevel - 60;
 
-		// Keep icebergs much higher above water level with good variation
-		const minY = Math.max(this.waterLevel - 400, lastIcebergTop - maxVerticalReach);
-		const maxY = Math.min(this.waterLevel - 200, lastIcebergTop + 60);
+		// Keep generated icebergs at similar height to first iceberg with tight variation
+		const minY = Math.max(this.waterLevel - 380, lastIcebergTop - maxVerticalReach);
+		const maxY = Math.min(this.waterLevel - 340, lastIcebergTop + 60);
 
 		// Generate iceberg with image-based dimensions if available
 		const imageType = Math.floor(Math.random() * 4) + 1;
@@ -696,8 +696,8 @@ class PenguinGlider {
 		// Penguin can jump ~144px high with jump power -12 and gravity 0.5
 		const maxJumpHeight = (this.jumpPower * this.jumpPower) / (2 * this.gravity);
 
-		// Get the average iceberg height
-		const avgIcebergY = this.waterLevel - 80; // Average of iceberg spawn range
+		// Get the average iceberg height (updated to match current iceberg positioning)
+		const avgIcebergY = this.waterLevel - 360; // Average of current iceberg spawn range (340-380 pixels above water)
 
 		// 70% chance to spawn fish at easily reachable heights
 		// 30% chance to spawn fish that require good timing/gliding
@@ -1135,7 +1135,7 @@ class PenguinGlider {
 		// Draw water in foreground (premier plan) - extended for camera movement
 		if (this.imagesReady && this.images.water) {
 			// Draw repeating water texture using natural image dimensions with reduced opacity
-			this.ctx.globalAlpha = 0.7; // Reduce opacity to 70%
+			this.ctx.globalAlpha = 0.4; // Reduce opacity to 40%
 			const waterImage = this.images.water;
 			const waterWidth = waterImage.naturalWidth;
 			const waterHeight = waterImage.naturalHeight;
@@ -1155,7 +1155,7 @@ class PenguinGlider {
 			this.ctx.globalAlpha = 1; // Reset opacity
 		} else {
 			// Fallback: solid color water with reduced opacity
-			this.ctx.globalAlpha = 0.7;
+			this.ctx.globalAlpha = 0.4;
 			this.ctx.fillStyle = "#1E3A8A";
 			this.ctx.fillRect(
 				this.camera.x - this.canvas.width,
