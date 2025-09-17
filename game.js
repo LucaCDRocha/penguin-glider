@@ -270,15 +270,8 @@ class PenguinGlider {
 	}
 
 	setupResponsiveCanvas() {
-		// Set up canvas for mobile responsiveness
+		// Set up canvas for full screen
 		const canvas = this.canvas;
-		const container = canvas.parentElement;
-
-		// Set initial canvas size
-		const baseWidth = 800;
-		const baseHeight = 600;
-		canvas.width = baseWidth;
-		canvas.height = baseHeight;
 
 		// Add resize handler for responsive design
 		window.addEventListener("resize", () => {
@@ -291,20 +284,17 @@ class PenguinGlider {
 
 	handleResize() {
 		const canvas = this.canvas;
-		const container = canvas.parentElement;
 
-		// Get container dimensions
-		const containerWidth = container.clientWidth - 20; // Account for padding
-		const containerHeight = window.innerHeight * 0.7; // Max 70% of viewport height
+		// Set canvas size to full viewport
+		canvas.width = window.innerWidth;
+		canvas.height = window.innerHeight;
 
-		// Calculate scale to fit
-		const scaleX = containerWidth / 800;
-		const scaleY = containerHeight / 600;
-		const scale = Math.min(scaleX, scaleY, 1); // Don't scale up beyond original size
+		// Update canvas style to match
+		canvas.style.width = window.innerWidth + "px";
+		canvas.style.height = window.innerHeight + "px";
 
-		// Apply scaling via CSS
-		canvas.style.width = 800 * scale + "px";
-		canvas.style.height = 600 * scale + "px";
+		// Update water level based on new height
+		this.waterLevel = canvas.height - 50;
 	}
 
 	setupEventListeners() {
@@ -394,12 +384,21 @@ class PenguinGlider {
 	}
 
 	generateInitialIcebergs() {
-		// Starting iceberg
+		// Starting iceberg - use image dimensions if available
+		let startWidth = 120,
+			startHeight = 60;
+		if (this.imagesReady && this.images.iceberg1) {
+			const image = this.images.iceberg1;
+			const imageAspect = image.naturalWidth / image.naturalHeight;
+			startHeight = 80; // Slightly larger starting platform
+			startWidth = startHeight * imageAspect;
+		}
+
 		this.icebergs.push({
 			x: 50,
-			y: this.waterLevel - 60,
-			width: 120,
-			height: 60,
+			y: this.waterLevel - startHeight,
+			width: startWidth,
+			height: startHeight,
 			imageType: 1, // Use iceberg1 for starting platform
 		});
 
@@ -433,12 +432,30 @@ class PenguinGlider {
 		const minY = Math.max(this.waterLevel - 150, lastIcebergTop - maxVerticalReach);
 		const maxY = Math.min(this.waterLevel - 40, lastIcebergTop + 60);
 
+		// Generate iceberg with image-based dimensions if available
+		const imageType = Math.floor(Math.random() * 4) + 1;
+		let width, height;
+
+		if (this.imagesReady && this.images[`iceberg${imageType}`]) {
+			// Use image natural dimensions scaled to appropriate game size
+			const image = this.images[`iceberg${imageType}`];
+			const imageAspect = image.naturalWidth / image.naturalHeight;
+			const baseHeight = 60 + Math.random() * 40; // 60-100px height range
+
+			height = baseHeight;
+			width = height * imageAspect;
+		} else {
+			// Fallback dimensions for when images aren't loaded
+			width = 80 + Math.random() * 60;
+			height = 40 + Math.random() * 40;
+		}
+
 		const iceberg = {
 			x: startX + horizontalDistance,
 			y: minY + Math.random() * (maxY - minY),
-			width: 80 + Math.random() * 60, // Keep varied iceberg sizes
-			height: 40 + Math.random() * 40,
-			imageType: Math.floor(Math.random() * 4) + 1, // Random iceberg type 1-4
+			width: width,
+			height: height,
+			imageType: imageType,
 		};
 
 		this.icebergs.push(iceberg);
@@ -528,8 +545,8 @@ class PenguinGlider {
 				if (
 					this.penguin.x + this.penguin.width > iceberg.x &&
 					this.penguin.x < iceberg.x + iceberg.width &&
-					this.penguin.y + this.penguin.height >= iceberg.y - 5 &&
-					this.penguin.y + this.penguin.height <= iceberg.y + 25
+					this.penguin.y + this.penguin.height >= iceberg.y - 3 &&
+					this.penguin.y + this.penguin.height <= iceberg.y + 15
 				) {
 					// Calculate penguin position on iceberg (0 = left edge, 1 = right edge)
 					const posOnIceberg = (this.penguin.x - iceberg.x) / iceberg.width;
@@ -746,7 +763,7 @@ class PenguinGlider {
 				newX < iceberg.x + iceberg.width &&
 				newX + penguinWidth > iceberg.x &&
 				newY < iceberg.y + iceberg.height &&
-				newY + penguinHeight > iceberg.y;
+				newY + penguinHeight > iceberg.y - 3; // Consistent with landing detection
 
 			if (wouldOverlap) {
 				// Check if penguin was previously overlapping (already inside)
@@ -754,7 +771,7 @@ class PenguinGlider {
 					prevX < iceberg.x + iceberg.width &&
 					prevX + penguinWidth > iceberg.x &&
 					prevY < iceberg.y + iceberg.height &&
-					prevY + penguinHeight > iceberg.y;
+					prevY + penguinHeight > iceberg.y - 3; // Consistent with landing detection
 
 				// If already overlapping, don't stop movement (let penguin escape)
 				if (wasOverlapping) {
@@ -825,12 +842,12 @@ class PenguinGlider {
 			if (
 				this.penguin.x + this.penguin.width > iceberg.x + 5 && // Small margin from edges
 				this.penguin.x < iceberg.x + iceberg.width - 5 &&
-				this.penguin.y + this.penguin.height >= iceberg.y - 5 &&
-				this.penguin.y + this.penguin.height <= iceberg.y + 15 &&
+				this.penguin.y + this.penguin.height >= iceberg.y - 3 &&
+				this.penguin.y + this.penguin.height <= iceberg.y + 12 &&
 				this.penguin.velocityY >= -1 // Allow slight upward velocity for landing
 			) {
-				// Snap penguin to the top of the iceberg
-				this.penguin.y = iceberg.y - this.penguin.height;
+				// Snap penguin to slightly into the iceberg surface for more realistic look
+				this.penguin.y = iceberg.y - this.penguin.height + 3;
 				this.penguin.velocityY = 0;
 				this.penguin.onIceberg = true;
 				this.penguin.gliding = false;
@@ -958,14 +975,30 @@ class PenguinGlider {
 			this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
 
 			this.ctx.fillStyle = "#FFFFFF";
-			this.ctx.font = "24px Arial";
+			this.ctx.font = "32px Arial";
 			this.ctx.textAlign = "center";
-			this.ctx.fillText("Loading images...", this.canvas.width / 2, this.canvas.height / 2);
+			this.ctx.fillText("Loading Penguin Glider...", this.canvas.width / 2, this.canvas.height / 2 - 20);
+
+			this.ctx.font = "24px Arial";
 			this.ctx.fillText(
-				`${this.imagesLoaded}/${this.totalImages}`,
+				`Loading images: ${this.imagesLoaded}/${this.totalImages}`,
 				this.canvas.width / 2,
-				this.canvas.height / 2 + 40
+				this.canvas.height / 2 + 30
 			);
+
+			// Loading bar
+			const barWidth = 300;
+			const barHeight = 8;
+			const barX = this.canvas.width / 2 - barWidth / 2;
+			const barY = this.canvas.height / 2 + 60;
+
+			this.ctx.fillStyle = "rgba(255, 255, 255, 0.3)";
+			this.ctx.fillRect(barX, barY, barWidth, barHeight);
+
+			this.ctx.fillStyle = "#4a90e2";
+			const progress = this.imagesLoaded / this.totalImages;
+			this.ctx.fillRect(barX, barY, barWidth * progress, barHeight);
+
 			return;
 		}
 
@@ -1081,7 +1114,8 @@ class PenguinGlider {
 		for (let iceberg of this.icebergs) {
 			// Use iceberg image if loaded, otherwise fall back to drawn iceberg
 			if (this.imagesReady && this.images[`iceberg${iceberg.imageType}`]) {
-				this.drawImageFillArea(
+				// Draw image at iceberg's stored dimensions (no cropping)
+				this.ctx.drawImage(
 					this.images[`iceberg${iceberg.imageType}`],
 					iceberg.x,
 					iceberg.y,

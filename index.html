@@ -5,142 +5,171 @@
 		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
 		<title>Penguin Glider - Arctic Adventure</title>
 		<style>
+			* {
+				margin: 0;
+				padding: 0;
+				box-sizing: border-box;
+			}
+
 			body {
 				margin: 0;
 				padding: 0;
-				background: linear-gradient(135deg, #87ceeb 0%, #98d8f0 50%, #b0e0e6 100%);
-				display: flex;
-				justify-content: center;
-				align-items: center;
-				min-height: 100vh;
+				background: #000;
 				font-family: "Arial", sans-serif;
 				overflow: hidden;
 				touch-action: none; /* Prevent default touch behaviors */
 				user-select: none; /* Prevent text selection */
-			}
-
-			.game-container {
-				text-align: center;
-				background: rgba(255, 255, 255, 0.1);
-				border-radius: 20px;
-				padding: 10px;
-				backdrop-filter: blur(10px);
-				box-shadow: 0 8px 32px rgba(31, 38, 135, 0.37);
-				max-width: 95vw;
-				max-height: 95vh;
-				display: flex;
-				flex-direction: column;
-				align-items: center;
+				position: relative;
+				width: 100vw;
+				height: 100vh;
 			}
 
 			canvas {
-				border: 3px solid #4a90e2;
-				border-radius: 15px;
+				display: block;
+				position: absolute;
+				top: 0;
+				left: 0;
+				width: 100vw;
+				height: 100vh;
 				background: linear-gradient(to bottom, #87ceeb 0%, #4682b4 50%, #1e3a8a 100%);
-				box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
-				max-width: 100%;
-				max-height: 70vh;
-				width: auto;
-				height: auto;
+				z-index: 1;
 			}
 
-			.controls {
-				margin-top: 15px;
-				color: white;
-				text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+			/* UI Elements overlay */
+			.ui-overlay {
+				position: fixed;
+				top: 0;
+				left: 0;
+				width: 100vw;
+				height: 100vh;
+				pointer-events: none;
+				z-index: 10;
+				display: flex;
+				flex-direction: column;
+			}
+
+			.top-ui {
+				display: flex;
+				justify-content: space-between;
+				align-items: flex-start;
+				padding: 20px;
+				width: 100%;
 			}
 
 			.score {
-				font-size: 24px;
+				font-size: 32px;
 				font-weight: bold;
-				margin-bottom: 10px;
 				color: #ffd700;
-				text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.7);
+				text-shadow: 3px 3px 6px rgba(0, 0, 0, 0.8);
+				background: rgba(0, 0, 0, 0.3);
+				padding: 10px 20px;
+				border-radius: 15px;
+				backdrop-filter: blur(10px);
 			}
 
 			.instructions {
-				font-size: 16px;
-				margin-top: 10px;
+				font-size: 18px;
 				color: #e6f3ff;
+				text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.8);
+				background: rgba(0, 0, 0, 0.3);
+				padding: 10px 15px;
+				border-radius: 10px;
+				backdrop-filter: blur(10px);
+				max-width: 300px;
 			}
 
 			.game-over {
-				position: absolute;
+				position: fixed;
 				top: 50%;
 				left: 50%;
 				transform: translate(-50%, -50%);
-				background: rgba(0, 0, 0, 0.8);
+				background: rgba(0, 0, 0, 0.9);
 				color: white;
-				padding: 30px;
-				border-radius: 15px;
+				padding: 40px;
+				border-radius: 20px;
 				text-align: center;
 				display: none;
+				z-index: 20;
+				backdrop-filter: blur(15px);
+				border: 2px solid rgba(255, 255, 255, 0.1);
+				box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+				pointer-events: auto;
 			}
 
 			.restart-btn {
 				background: #4a90e2;
 				color: white;
 				border: none;
-				padding: 12px 24px;
-				border-radius: 8px;
+				padding: 15px 30px;
+				border-radius: 10px;
 				cursor: pointer;
-				font-size: 16px;
-				margin-top: 15px;
-				transition: background 0.3s;
+				font-size: 18px;
+				margin-top: 20px;
+				transition: all 0.3s;
+				pointer-events: auto;
 			}
 
 			.restart-btn:hover {
 				background: #357abd;
+				transform: scale(1.05);
 			}
 
 			/* Mobile Controls */
 			.mobile-controls {
+				position: fixed;
+				bottom: 30px;
+				left: 50%;
+				transform: translateX(-50%);
 				display: none;
 				flex-direction: row;
 				justify-content: space-between;
 				align-items: center;
-				width: 100%;
-				max-width: 400px;
-				margin-top: 15px;
-				padding: 10px;
+				width: 90%;
+				max-width: 500px;
+				padding: 20px;
+				z-index: 15;
+				pointer-events: none;
 			}
 
 			.control-button {
-				background: rgba(74, 144, 226, 0.8);
+				background: rgba(74, 144, 226, 0.9);
 				border: 2px solid #4a90e2;
-				border-radius: 12px;
+				border-radius: 15px;
 				color: white;
-				font-size: 18px;
+				font-size: 20px;
 				font-weight: bold;
-				padding: 15px;
+				padding: 20px;
 				margin: 5px;
-				min-width: 60px;
-				min-height: 60px;
+				min-width: 70px;
+				min-height: 70px;
 				display: flex;
 				align-items: center;
 				justify-content: center;
 				touch-action: manipulation;
 				user-select: none;
-				backdrop-filter: blur(10px);
-				box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+				backdrop-filter: blur(15px);
+				box-shadow: 0 6px 20px rgba(0, 0, 0, 0.4);
 				transition: all 0.1s;
+				pointer-events: auto;
 			}
 
 			.control-button:active {
 				background: rgba(53, 122, 189, 0.9);
 				transform: scale(0.95);
-				box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
+				box-shadow: 0 3px 10px rgba(0, 0, 0, 0.5);
 			}
 
 			.jump-button {
-				background: rgba(255, 140, 0, 0.8);
+				background: rgba(255, 140, 0, 0.9);
 				border-color: #ff8c00;
 				flex: 1;
-				margin: 0 10px;
+				margin: 0 15px;
+				min-height: 80px;
+				font-size: 22px;
 			}
 
 			.jump-button:active {
-				background: rgba(255, 140, 0, 0.9);
+				background: rgba(255, 140, 0, 1);
 			}
 
 			/* Show mobile controls on touch devices */
@@ -163,46 +192,54 @@
 
 			/* Responsive design for smaller screens */
 			@media (max-width: 768px) {
-				.game-container {
-					padding: 5px;
-				}
-
 				.score {
-					font-size: 20px;
-					margin-bottom: 5px;
+					font-size: 28px;
 				}
 
 				.instructions {
-					font-size: 14px;
-					margin-top: 5px;
+					font-size: 16px;
+				}
+
+				.control-button {
+					min-width: 60px;
+					min-height: 60px;
+					font-size: 18px;
+				}
+
+				.jump-button {
+					min-height: 70px;
+					font-size: 20px;
 				}
 			}
 		</style>
 	</head>
 	<body>
-		<div class="game-container">
-			<div class="score">Score: <span id="score">0</span></div>
-			<canvas id="gameCanvas" width="800" height="600"></canvas>
-			<div class="controls">
+		<canvas id="gameCanvas"></canvas>
+
+		<!-- UI Overlay -->
+		<div class="ui-overlay">
+			<div class="top-ui">
+				<div class="score">Score: <span id="score">0</span></div>
 				<div class="instructions">
 					🐧 Use ARROW KEYS, WASD, or TOUCH CONTROLS to play<br />
 					Glide from iceberg to iceberg and collect fish for points! 🐟
 				</div>
 			</div>
+		</div>
 
-			<!-- Mobile Touch Controls -->
-			<div class="mobile-controls" id="mobileControls">
-				<button class="control-button" id="leftBtn">←</button>
-				<button class="control-button jump-button" id="jumpBtn">JUMP/GLIDE</button>
-				<button class="control-button" id="rightBtn">→</button>
-			</div>
+		<!-- Mobile Touch Controls -->
+		<div class="mobile-controls" id="mobileControls">
+			<button class="control-button" id="leftBtn">←</button>
+			<button class="control-button jump-button" id="jumpBtn">JUMP/GLIDE</button>
+			<button class="control-button" id="rightBtn">→</button>
+		</div>
 
-			<div class="game-over" id="gameOver">
-				<h2>Game Over!</h2>
-				<p>The penguin fell into the icy water! ❄️</p>
-				<p>Final Score: <span id="finalScore">0</span></p>
-				<button class="restart-btn" onclick="restartGame()">Try Again</button>
-			</div>
+		<!-- Game Over Modal -->
+		<div class="game-over" id="gameOver">
+			<h2>Game Over!</h2>
+			<p>The penguin fell into the icy water! ❄️</p>
+			<p>Final Score: <span id="finalScore">0</span></p>
+			<button class="restart-btn" onclick="restartGame()">Try Again</button>
 		</div>
 
 		<script src="game.js"></script>
