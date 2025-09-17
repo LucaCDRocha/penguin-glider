@@ -1046,8 +1046,8 @@ class PenguinGlider {
 
 		// Draw background mountains if image is loaded
 		if (this.imagesReady && this.images.moutain) {
-			// Draw repeating mountain background with parallax effect
-			const mountainY = this.waterLevel - 300;
+			// Draw repeating mountain background with parallax effect, positioned relative to icebergs
+			const mountainY = this.waterLevel - 500; // Lowered for better positioning
 			const mountainHeight = 225;
 			const parallaxSpeed = 0.3; // Mountains move slower than camera
 			const parallaxX = this.camera.x * parallaxSpeed;
