@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<meta charset="UTF-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+		<title>Penguin Glider - Arctic Adventure</title>
+		<style>
+			body {
+				margin: 0;
+				padding: 0;
+				background: linear-gradient(135deg, #87ceeb 0%, #98d8f0 50%, #b0e0e6 100%);
+				display: flex;
+				justify-content: center;
+				align-items: center;
+				min-height: 100vh;
+				font-family: "Arial", sans-serif;
+				overflow: hidden;
+				touch-action: none; /* Prevent default touch behaviors */
+				user-select: none; /* Prevent text selection */
+			}
+
+			.game-container {
+				text-align: center;
+				background: rgba(255, 255, 255, 0.1);
+				border-radius: 20px;
+				padding: 10px;
+				backdrop-filter: blur(10px);
+				box-shadow: 0 8px 32px rgba(31, 38, 135, 0.37);
+				max-width: 95vw;
+				max-height: 95vh;
+				display: flex;
+				flex-direction: column;
+				align-items: center;
+			}
+
+			canvas {
+				border: 3px solid #4a90e2;
+				border-radius: 15px;
+				background: linear-gradient(to bottom, #87ceeb 0%, #4682b4 50%, #1e3a8a 100%);
+				box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+				max-width: 100%;
+				max-height: 70vh;
+				width: auto;
+				height: auto;
+			}
+
+			.controls {
+				margin-top: 15px;
+				color: white;
+				text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+			}
+
+			.score {
+				font-size: 24px;
+				font-weight: bold;
+				margin-bottom: 10px;
+				color: #ffd700;
+				text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.7);
+			}
+
+			.instructions {
+				font-size: 16px;
+				margin-top: 10px;
+				color: #e6f3ff;
+			}
+
+			.game-over {
+				position: absolute;
+				top: 50%;
+				left: 50%;
+				transform: translate(-50%, -50%);
+				background: rgba(0, 0, 0, 0.8);
+				color: white;
+				padding: 30px;
+				border-radius: 15px;
+				text-align: center;
+				display: none;
+			}
+
+			.restart-btn {
+				background: #4a90e2;
+				color: white;
+				border: none;
+				padding: 12px 24px;
+				border-radius: 8px;
+				cursor: pointer;
+				font-size: 16px;
+				margin-top: 15px;
+				transition: background 0.3s;
+			}
+
+			.restart-btn:hover {
+				background: #357abd;
+			}
+
+			/* Mobile Controls */
+			.mobile-controls {
+				display: none;
+				flex-direction: row;
+				justify-content: space-between;
+				align-items: center;
+				width: 100%;
+				max-width: 400px;
+				margin-top: 15px;
+				padding: 10px;
+			}
+
+			.control-button {
+				background: rgba(74, 144, 226, 0.8);
+				border: 2px solid #4a90e2;
+				border-radius: 12px;
+				color: white;
+				font-size: 18px;
+				font-weight: bold;
+				padding: 15px;
+				margin: 5px;
+				min-width: 60px;
+				min-height: 60px;
+				display: flex;
+				align-items: center;
+				justify-content: center;
+				touch-action: manipulation;
+				user-select: none;
+				backdrop-filter: blur(10px);
+				box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+				transition: all 0.1s;
+			}
+
+			.control-button:active {
+				background: rgba(53, 122, 189, 0.9);
+				transform: scale(0.95);
+				box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
+			}
+
+			.jump-button {
+				background: rgba(255, 140, 0, 0.8);
+				border-color: #ff8c00;
+				flex: 1;
+				margin: 0 10px;
+			}
+
+			.jump-button:active {
+				background: rgba(255, 140, 0, 0.9);
+			}
+
+			/* Show mobile controls on touch devices */
+			@media (hover: none) and (pointer: coarse) {
+				.mobile-controls {
+					display: flex !important;
+				}
+
+				.instructions {
+					font-size: 14px;
+				}
+			}
+
+			/* Alternative mobile detection */
+			@media (max-width: 768px) {
+				.mobile-controls {
+					display: flex;
+				}
+			}
+
+			/* Responsive design for smaller screens */
+			@media (max-width: 768px) {
+				.game-container {
+					padding: 5px;
+				}
+
+				.score {
+					font-size: 20px;
+					margin-bottom: 5px;
+				}
+
+				.instructions {
+					font-size: 14px;
+					margin-top: 5px;
+				}
+			}
+		</style>
+	</head>
+	<body>
+		<div class="game-container">
+			<div class="score">Score: <span id="score">0</span></div>
+			<canvas id="gameCanvas" width="800" height="600"></canvas>
+			<div class="controls">
+				<div class="instructions">
+					🐧 Use ARROW KEYS, WASD, or TOUCH CONTROLS to play<br />
+					Glide from iceberg to iceberg and collect fish for points! 🐟
+				</div>
+			</div>
+
+			<!-- Mobile Touch Controls -->
+			<div class="mobile-controls" id="mobileControls">
+				<button class="control-button" id="leftBtn">←</button>
+				<button class="control-button jump-button" id="jumpBtn">JUMP/GLIDE</button>
+				<button class="control-button" id="rightBtn">→</button>
+			</div>
+
+			<div class="game-over" id="gameOver">
+				<h2>Game Over!</h2>
+				<p>The penguin fell into the icy water! ❄️</p>
+				<p>Final Score: <span id="finalScore">0</span></p>
+				<button class="restart-btn" onclick="restartGame()">Try Again</button>
+			</div>
+		</div>
+
+		<script src="game.js"></script>
+	</body>
+</html>
