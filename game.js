@@ -15,8 +15,8 @@ class PenguinGlider {
 		this.penguin = {
 			x: 100,
 			y: 300,
-			width: 40,
-			height: 40,
+			width: 60,
+			height: 60,
 			velocityX: 0,
 			velocityY: 0,
 			onIceberg: false,
@@ -25,9 +25,9 @@ class PenguinGlider {
 
 		// Physics constants
 		this.gravity = 0.5;
-		this.jumpPower = -12;
-		this.moveSpeed = 5;
-		this.glideSpeed = 3;
+		this.jumpPower = -15;
+		this.moveSpeed = 7;
+		this.glideSpeed = 4;
 		this.friction = 0.95; // Much less friction for slippery ice
 		this.iceSlipperiness = 0.98; // Additional slipperiness factor
 
@@ -41,8 +41,8 @@ class PenguinGlider {
 		this.fishSpawnTimer = 0;
 		this.fishSpawnRate = 120; // spawn every 2 seconds at 60fps
 
-		// Water level
-		this.waterLevel = this.canvas.height - 50;
+		// Water level (lower than before)
+		this.waterLevel = this.canvas.height - 20;
 
 		// Particles for effects
 		this.particles = [];
@@ -293,8 +293,8 @@ class PenguinGlider {
 		canvas.style.width = window.innerWidth + "px";
 		canvas.style.height = window.innerHeight + "px";
 
-		// Update water level based on new height
-		this.waterLevel = canvas.height - 50;
+		// Update water level based on new height (lower than before)
+		this.waterLevel = canvas.height - 20;
 	}
 
 	setupEventListeners() {
@@ -384,13 +384,13 @@ class PenguinGlider {
 	}
 
 	generateInitialIcebergs() {
-		// Starting iceberg - use image dimensions if available
-		let startWidth = 120,
-			startHeight = 60;
+		// Starting iceberg - use image dimensions if available (tripled size)
+		let startWidth = 540,
+			startHeight = 270;
 		if (this.imagesReady && this.images.iceberg1) {
 			const image = this.images.iceberg1;
 			const imageAspect = image.naturalWidth / image.naturalHeight;
-			startHeight = 80; // Slightly larger starting platform
+			startHeight = 360; // Even larger starting platform (tripled)
 			startWidth = startHeight * imageAspect;
 		}
 
@@ -402,26 +402,26 @@ class PenguinGlider {
 			imageType: 1, // Use iceberg1 for starting platform
 		});
 
-		// Generate more icebergs with guaranteed reachability
+		// Generate more icebergs with guaranteed reachability and more spacing
 		for (let i = 1; i < 5; i++) {
-			// Use smaller, more reachable spacing for initial icebergs
-			this.generateIceberg(50 + 150 * i); // 150 pixel spacing ensures reachability
+			// Increased spacing for larger icebergs
+			this.generateIceberg(50 + 250 * i); // 250 pixel spacing for more breathing room
 		}
 	}
 
 	generateIceberg(startX) {
 		// Calculate penguin's maximum jump capabilities
-		// Jump power: -12, gravity: 0.5
-		// Time to reach peak: 12/0.5 = 24 frames, total air time: 48 frames
-		// Maximum horizontal distance with movement: 48 * 5 = 240 pixels
-		// Maximum horizontal distance with gliding: 48 * 3 = 144 pixels
-		// Safe maximum distance: 180 pixels to account for different jump trajectories
+		// Jump power: -15, gravity: 0.5 (updated for current physics)
+		// Time to reach peak: 15/0.5 = 30 frames, total air time: 60 frames
+		// Maximum horizontal distance with movement: 60 * 7 = 420 pixels
+		// Maximum horizontal distance with gliding: 60 * 4 = 240 pixels
+		// Safe maximum distance: 300 pixels to account for different jump trajectories
 
-		const maxHorizontalReach = 180;
-		const maxVerticalReach = 120; // Maximum height difference penguin can overcome
+		const maxHorizontalReach = 300; // Increased for larger spacing
+		const maxVerticalReach = 150; // Increased for larger icebergs
 
-		// Ensure iceberg is within reachable distance
-		const horizontalDistance = Math.random() * (maxHorizontalReach * 0.6) + maxHorizontalReach * 0.3; // 30-90% of max reach
+		// Ensure iceberg is within reachable distance with more variation
+		const horizontalDistance = Math.random() * (maxHorizontalReach * 0.8) + maxHorizontalReach * 0.2; // 20-100% of max reach
 
 		// Calculate vertical position based on reachability
 		// Find the last iceberg to calculate relative positioning
@@ -437,17 +437,17 @@ class PenguinGlider {
 		let width, height;
 
 		if (this.imagesReady && this.images[`iceberg${imageType}`]) {
-			// Use image natural dimensions scaled to appropriate game size
+			// Use image natural dimensions scaled to appropriate game size (tripled)
 			const image = this.images[`iceberg${imageType}`];
 			const imageAspect = image.naturalWidth / image.naturalHeight;
-			const baseHeight = 60 + Math.random() * 40; // 60-100px height range
+			const baseHeight = 270 + Math.random() * 180; // 270-450px height range (tripled)
 
 			height = baseHeight;
 			width = height * imageAspect;
 		} else {
-			// Fallback dimensions for when images aren't loaded
-			width = 80 + Math.random() * 60;
-			height = 40 + Math.random() * 40;
+			// Fallback dimensions for when images aren't loaded (tripled)
+			width = 360 + Math.random() * 270;
+			height = 180 + Math.random() * 180;
 		}
 
 		const iceberg = {
@@ -467,7 +467,7 @@ class PenguinGlider {
 			this.snowflakes.push({
 				x: Math.random() * this.canvas.width * 3, // Spread across larger area
 				y: Math.random() * this.canvas.height,
-				size: Math.random() * 3 + 1,
+				size: Math.random() * 5 + 2,
 				speed: Math.random() * 2 + 1,
 			});
 		}
@@ -652,10 +652,10 @@ class PenguinGlider {
 
 		// Generate new icebergs ahead of camera
 		if (this.icebergs.length < 8) {
-			// More icebergs for seamless experience
+			// More icebergs for seamless experience with increased spacing
 			const lastIceberg = this.icebergs[this.icebergs.length - 1];
-			// Use a smaller, more reachable base distance
-			const baseDistance = 120; // Reduced from 200 to ensure reachability
+			// Increased base distance for more spacing between larger icebergs
+			const baseDistance = 200; // Increased spacing for larger icebergs
 			this.generateIceberg(lastIceberg.x + baseDistance);
 		}
 	}
@@ -711,8 +711,8 @@ class PenguinGlider {
 		const fish = {
 			x: this.camera.x + this.canvas.width + 50, // Spawn ahead of camera view
 			y: fishY,
-			width: 25,
-			height: 15,
+			width: 40,
+			height: 24,
 			animationTimer: 0,
 			collected: false,
 			imageType: Math.floor(Math.random() * 4) + 1, // Random fish type 1-4
@@ -987,8 +987,8 @@ class PenguinGlider {
 			);
 
 			// Loading bar
-			const barWidth = 300;
-			const barHeight = 8;
+			const barWidth = 450;
+			const barHeight = 12;
 			const barX = this.canvas.width / 2 - barWidth / 2;
 			const barY = this.canvas.height / 2 + 60;
 
@@ -1029,8 +1029,8 @@ class PenguinGlider {
 		// Draw background mountains if image is loaded
 		if (this.imagesReady && this.images.moutain) {
 			// Draw repeating mountain background with parallax effect
-			const mountainY = this.waterLevel - 200;
-			const mountainHeight = 150;
+			const mountainY = this.waterLevel - 300;
+			const mountainHeight = 225;
 			const parallaxSpeed = 0.3; // Mountains move slower than camera
 			const parallaxX = this.camera.x * parallaxSpeed;
 
@@ -1061,17 +1061,28 @@ class PenguinGlider {
 
 		// Draw water (extended for camera movement)
 		if (this.imagesReady && this.images.water) {
-			// Draw repeating water texture
-			const pattern = this.ctx.createPattern(this.images.water, "repeat");
-			this.ctx.fillStyle = pattern;
-			this.ctx.fillRect(
-				this.camera.x - this.canvas.width,
-				this.waterLevel,
-				this.canvas.width * 3,
-				this.canvas.height
-			);
+			// Draw repeating water texture using natural image dimensions with reduced opacity
+			this.ctx.globalAlpha = 0.7; // Reduce opacity to 70%
+			const waterImage = this.images.water;
+			const waterWidth = waterImage.naturalWidth;
+			const waterHeight = waterImage.naturalHeight;
+
+			// Calculate how many tiles we need to cover the visible area
+			const startX = this.camera.x - this.canvas.width;
+			const endX = this.camera.x + this.canvas.width * 2;
+			const startY = this.waterLevel;
+			const endY = this.waterLevel + this.canvas.height;
+
+			// Tile the water image to fill the area
+			for (let x = startX - (startX % waterWidth); x < endX; x += waterWidth) {
+				for (let y = startY - (startY % waterHeight); y < endY; y += waterHeight) {
+					this.ctx.drawImage(waterImage, x, y, waterWidth, waterHeight);
+				}
+			}
+			this.ctx.globalAlpha = 1; // Reset opacity
 		} else {
-			// Fallback: solid color water
+			// Fallback: solid color water with reduced opacity
+			this.ctx.globalAlpha = 0.7;
 			this.ctx.fillStyle = "#1E3A8A";
 			this.ctx.fillRect(
 				this.camera.x - this.canvas.width,
@@ -1079,12 +1090,13 @@ class PenguinGlider {
 				this.canvas.width * 3,
 				this.canvas.height
 			);
+			this.ctx.globalAlpha = 1; // Reset opacity
 		}
 
 		// Draw water waves (extended for camera)
 		if (this.imagesReady && this.images.waves) {
 			// Draw wave overlay on top of water with preserved aspect ratio
-			const waveHeight = 20;
+			const waveHeight = 30;
 			const waveAspect = this.images.waves.naturalWidth / this.images.waves.naturalHeight;
 			const waveWidth = waveHeight * waveAspect;
 
@@ -1095,7 +1107,7 @@ class PenguinGlider {
 		} else {
 			// Fallback: drawn waves
 			this.ctx.strokeStyle = "#4682B4";
-			this.ctx.lineWidth = 2;
+			this.ctx.lineWidth = 3;
 			this.ctx.beginPath();
 			const waveStart = this.camera.x - 100;
 			const waveEnd = this.camera.x + this.canvas.width + 100;
@@ -1153,12 +1165,12 @@ class PenguinGlider {
 			if (this.imagesReady && this.images.bubble && particle.color.includes("180")) {
 				// Use bubble image for blue-ish particles (fish collection)
 				this.ctx.globalAlpha = 0.7;
-				this.drawImagePreserveAspect(this.images.bubble, particle.x - 4, particle.y - 4, 8, 8, "center");
+				this.drawImagePreserveAspect(this.images.bubble, particle.x - 6, particle.y - 6, 12, 12, "center");
 				this.ctx.globalAlpha = 1;
 			} else {
 				// Fallback: simple colored rectangles
 				this.ctx.fillStyle = particle.color;
-				this.ctx.fillRect(particle.x - 2, particle.y - 2, 4, 4);
+				this.ctx.fillRect(particle.x - 3, particle.y - 3, 6, 6);
 			}
 		}
 
@@ -1177,46 +1189,49 @@ class PenguinGlider {
 
 		// Use penguin image if loaded, otherwise fall back to drawn penguin
 		if (this.imagesReady && this.images.penguin) {
-			this.drawImagePreserveAspect(this.images.penguin, x, y, w, h, "bottom");
+			// Draw penguin lower to appear more embedded in iceberg surface
+			const visualOffset = 30; // Pixels lower than collision position
+			this.drawImagePreserveAspect(this.images.penguin, x, y + visualOffset, w, h, "bottom");
 		} else {
-			// Fallback: Penguin body (black)
+			// Fallback: Penguin body (black) - also offset for consistency
+			const visualOffset = 8;
 			this.ctx.fillStyle = "#2C2C2C";
-			this.ctx.fillRect(x + w * 0.1, y + h * 0.2, w * 0.8, h * 0.7);
+			this.ctx.fillRect(x + w * 0.1, y + visualOffset + h * 0.2, w * 0.8, h * 0.7);
 
 			// Penguin belly (white)
 			this.ctx.fillStyle = "#FFFFFF";
-			this.ctx.fillRect(x + w * 0.25, y + h * 0.3, w * 0.5, h * 0.5);
+			this.ctx.fillRect(x + w * 0.25, y + visualOffset + h * 0.3, w * 0.5, h * 0.5);
 
 			// Penguin head (black)
 			this.ctx.fillStyle = "#2C2C2C";
 			this.ctx.beginPath();
-			this.ctx.arc(x + w / 2, y + h * 0.25, w * 0.35, 0, Math.PI * 2);
+			this.ctx.arc(x + w / 2, y + visualOffset + h * 0.25, w * 0.35, 0, Math.PI * 2);
 			this.ctx.fill();
 
 			// Penguin beak (orange)
 			this.ctx.fillStyle = "#FF8C00";
 			this.ctx.beginPath();
-			this.ctx.moveTo(x + w * 0.45, y + h * 0.25);
-			this.ctx.lineTo(x + w * 0.3, y + h * 0.3);
-			this.ctx.lineTo(x + w * 0.45, y + h * 0.35);
+			this.ctx.moveTo(x + w * 0.45, y + visualOffset + h * 0.25);
+			this.ctx.lineTo(x + w * 0.3, y + visualOffset + h * 0.3);
+			this.ctx.lineTo(x + w * 0.45, y + visualOffset + h * 0.35);
 			this.ctx.fill();
 
 			// Penguin eyes (white)
 			this.ctx.fillStyle = "#FFFFFF";
 			this.ctx.beginPath();
-			this.ctx.arc(x + w * 0.4, y + h * 0.2, w * 0.08, 0, Math.PI * 2);
+			this.ctx.arc(x + w * 0.4, y + visualOffset + h * 0.2, w * 0.08, 0, Math.PI * 2);
 			this.ctx.fill();
 			this.ctx.beginPath();
-			this.ctx.arc(x + w * 0.6, y + h * 0.2, w * 0.08, 0, Math.PI * 2);
+			this.ctx.arc(x + w * 0.6, y + visualOffset + h * 0.2, w * 0.08, 0, Math.PI * 2);
 			this.ctx.fill();
 
 			// Penguin pupils (black)
 			this.ctx.fillStyle = "#000000";
 			this.ctx.beginPath();
-			this.ctx.arc(x + w * 0.42, y + h * 0.2, w * 0.04, 0, Math.PI * 2);
+			this.ctx.arc(x + w * 0.42, y + visualOffset + h * 0.2, w * 0.04, 0, Math.PI * 2);
 			this.ctx.fill();
 			this.ctx.beginPath();
-			this.ctx.arc(x + w * 0.58, y + h * 0.2, w * 0.04, 0, Math.PI * 2);
+			this.ctx.arc(x + w * 0.58, y + visualOffset + h * 0.2, w * 0.04, 0, Math.PI * 2);
 			this.ctx.fill();
 
 			// Penguin flippers (black)
@@ -1224,7 +1239,7 @@ class PenguinGlider {
 
 			// Left flipper
 			this.ctx.save();
-			this.ctx.translate(x + w * 0.1, y + h * 0.4);
+			this.ctx.translate(x + w * 0.1, y + visualOffset + h * 0.4);
 			if (this.penguin.gliding) {
 				this.ctx.rotate(-0.3);
 			}
@@ -1233,7 +1248,7 @@ class PenguinGlider {
 
 			// Right flipper
 			this.ctx.save();
-			this.ctx.translate(x + w * 0.9, y + h * 0.4);
+			this.ctx.translate(x + w * 0.9, y + visualOffset + h * 0.4);
 			if (this.penguin.gliding) {
 				this.ctx.rotate(0.3);
 			}
@@ -1242,8 +1257,8 @@ class PenguinGlider {
 
 			// Penguin feet (orange)
 			this.ctx.fillStyle = "#FF8C00";
-			this.ctx.fillRect(x + w * 0.2, y + h * 0.85, w * 0.25, h * 0.15);
-			this.ctx.fillRect(x + w * 0.55, y + h * 0.85, w * 0.25, h * 0.15);
+			this.ctx.fillRect(x + w * 0.2, y + visualOffset + h * 0.85, w * 0.25, h * 0.15);
+			this.ctx.fillRect(x + w * 0.55, y + visualOffset + h * 0.85, w * 0.25, h * 0.15);
 		}
 	}
 
