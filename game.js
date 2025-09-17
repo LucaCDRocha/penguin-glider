@@ -184,36 +184,63 @@ class PenguinGlider {
 		const baseCloudWidth = 200 * scale;
 		const baseCloudHeight = 100 * scale;
 
-		// Cloud spacing
-		const cloudSpacing = baseCloudWidth * 1.5;
+		// Much wider spacing for fewer clouds
+		const baseCloudSpacing = baseCloudWidth * 3.0;
 
 		// Calculate tile positions based on parallax offset
-		const startTile = Math.floor((leftBound - parallaxX) / cloudSpacing);
-		const endTile = Math.ceil((rightBound - parallaxX) / cloudSpacing);
+		const startTile = Math.floor((leftBound - parallaxX) / baseCloudSpacing) - 2;
+		const endTile = Math.ceil((rightBound - parallaxX) / baseCloudSpacing) + 2;
 
 		// Set cloud opacity for atmospheric effect
 		this.ctx.globalAlpha = 0.6;
 
-		// Draw clouds infinitely
-		for (let tile = startTile; tile <= endTile; tile++) {
-			// World position accounting for parallax
-			const x = parallaxX + tile * cloudSpacing;
+		// Helper function for consistent random values based on tile position
+		const getRandomValue = (tile, seed) => {
+			// Use tile position and seed to generate consistent pseudo-random values
+			const hash = Math.sin((tile + seed) * 12.9898) * 43758.5453;
+			return hash - Math.floor(hash);
+		};
 
-			// Use tile index to deterministically select cloud type and add variation
+		// Draw clouds infinitely with random placement
+		for (let tile = startTile; tile <= endTile; tile++) {
+			// Use consistent spacing with random offset for each tile
+			const spacingRandom = getRandomValue(tile, 1.0);
+			const randomOffset = (spacingRandom - 0.5) * baseCloudSpacing * 0.5; // Random offset up to 50% of spacing
+
+			// World position accounting for parallax - simple and smooth
+			const x = parallaxX + tile * baseCloudSpacing + randomOffset;
+
+			// Skip if cloud would be completely outside render bounds
+			if (x > rightBound + baseCloudWidth || x < leftBound - baseCloudWidth) continue;
+
+			// Use tile index to deterministically select cloud type
 			const cloudIndex = Math.abs(tile) % cloudTypes.length;
 			const cloudType = cloudTypes[cloudIndex];
 
-			// Add some vertical variation based on tile position
-			const verticalVariation = Math.sin(tile * 0.7) * 30 * scale;
+			// Random vertical variation (much more dramatic)
+			const verticalRandom = getRandomValue(tile, 2.0);
+			const verticalRange = this.canvas.height * 0.3; // 30% of screen height variation
+			const verticalVariation = (verticalRandom - 0.5) * verticalRange;
 			const finalY = cloudY + verticalVariation;
 
-			// Add some size variation
-			const sizeVariation = 1 + Math.sin(tile * 1.3) * 0.3;
+			// Random size variation (50% to 200% of base size)
+			const sizeRandom = getRandomValue(tile, 3.0);
+			const sizeVariation = 0.5 + sizeRandom * 1.5;
 			const cloudWidth = baseCloudWidth * sizeVariation;
 			const cloudHeight = baseCloudHeight * sizeVariation;
 
+			// Random opacity variation for more atmospheric depth
+			const opacityRandom = getRandomValue(tile, 4.0);
+			const cloudOpacity = 0.3 + opacityRandom * 0.4; // 0.3 to 0.7 opacity
+			this.ctx.globalAlpha = cloudOpacity;
+
+			// Random horizontal offset for more natural placement
+			const horizontalRandom = getRandomValue(tile, 5.0);
+			const horizontalOffset = (horizontalRandom - 0.5) * baseCloudWidth * 0.3;
+			const finalX = x + horizontalOffset;
+
 			if (this.images[cloudType]) {
-				this.drawImagePreserveAspect(this.images[cloudType], x, finalY, cloudWidth, cloudHeight, "center");
+				this.drawImagePreserveAspect(this.images[cloudType], finalX, finalY, cloudWidth, cloudHeight, "center");
 			}
 		}
 
@@ -1149,14 +1176,11 @@ class PenguinGlider {
 
 		// Draw infinite cloud layers for depth and atmosphere
 		if (this.imagesReady) {
-			// Layer 1: Far background clouds (slowest parallax)
-			this.drawInfiniteCloudLayer(0.1, -this.canvas.height * 0.8, 0.15, ["cloud1", "cloud2"]);
+			// Layer 1: Far background clouds (very slow parallax, large size)
+			this.drawInfiniteCloudLayer(0.05, -this.canvas.height * 0.7, 0.4, ["cloud1", "cloud2", "cloud3"]);
 
-			// Layer 2: Mid background clouds (medium parallax)
-			this.drawInfiniteCloudLayer(0.2, -this.canvas.height * 0.6, 0.2, ["cloud3", "cloud4"]);
-
-			// Layer 3: Near background clouds (faster parallax)
-			this.drawInfiniteCloudLayer(0.25, -this.canvas.height * 0.4, 0.25, ["cloud5", "cloud1"]);
+			// Layer 2: Mid background clouds (slow parallax, medium-large size)
+			this.drawInfiniteCloudLayer(0.1, -this.canvas.height * 0.5, 0.3, ["cloud4", "cloud5"]);
 		}
 
 		// Draw infinite background mountains if image is loaded
