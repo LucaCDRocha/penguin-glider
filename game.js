@@ -10,6 +10,10 @@ class PenguinGlider {
 		this.gameOverElement = document.getElementById("gameOver");
 		this.finalScoreElement = document.getElementById("finalScore");
 
+		// Calculate mobile scale factor based on screen size
+		this.isMobile = window.innerWidth < 768 || window.innerHeight < 500;
+		this.mobileScaleFactor = this.isMobile ? 0.7 : 1.0; // Scale down 30% on mobile
+
 		this.gameState = "playing"; // 'playing' or 'gameOver'
 		this.score = 0;
 		this.keys = {};
@@ -511,19 +515,22 @@ class PenguinGlider {
 	}
 
 	generateInitialIcebergs() {
-		// Starting iceberg - use image dimensions if available (tripled size)
-		let startWidth = 540,
-			startHeight = 270;
+		// Starting iceberg - use image dimensions if available (tripled size, with mobile scaling)
+		let startWidth = 540 * this.mobileScaleFactor,
+			startHeight = 270 * this.mobileScaleFactor;
 		if (this.imagesReady && this.images.iceberg1) {
 			const image = this.images.iceberg1;
 			const imageAspect = image.naturalWidth / image.naturalHeight;
-			startHeight = 360; // Even larger starting platform (tripled)
+			startHeight = 360 * this.mobileScaleFactor; // Apply mobile scale
 			startWidth = startHeight * imageAspect;
 		}
 
+		// On mobile, position starting iceberg higher
+		const mobileHeightAdjustment = this.isMobile ? 50 : 0; // Move 50px higher on mobile (reduced from 100px)
+
 		this.icebergs.push({
 			x: 100 - startWidth / 2, // Center iceberg with penguin x position
-			y: this.waterLevel - startHeight - 20, // Position slightly above water level
+			y: this.waterLevel - startHeight - 20 - mobileHeightAdjustment, // Position higher on mobile
 			width: startWidth,
 			height: startHeight,
 			imageType: 1, // Use iceberg1 for starting platform
@@ -565,26 +572,33 @@ class PenguinGlider {
 		const lastIceberg = this.icebergs[this.icebergs.length - 1];
 		const lastIcebergTop = lastIceberg ? lastIceberg.y : this.waterLevel - 60;
 
-		// Keep generated icebergs at similar height to first iceberg with tight variation
-		const minY = Math.max(this.waterLevel - 380, lastIcebergTop - maxVerticalReach);
-		const maxY = Math.min(this.waterLevel - 340, lastIcebergTop + 60);
+		// Keep generated icebergs at similar height to first iceberg with tight variation (scaled for mobile)
+		const baseMinOffset = 380 * this.mobileScaleFactor;
+		const baseMaxOffset = 340 * this.mobileScaleFactor;
+		// On mobile, move icebergs higher by reducing the offset from water level
+		const mobileHeightAdjustment = this.isMobile ? 50 : 0; // Move 50px higher on mobile (reduced from 100px)
+		const minY = Math.max(
+			this.waterLevel - baseMinOffset - mobileHeightAdjustment,
+			lastIcebergTop - maxVerticalReach
+		);
+		const maxY = Math.min(this.waterLevel - baseMaxOffset - mobileHeightAdjustment, lastIcebergTop + 60);
 
 		// Generate iceberg with image-based dimensions if available
 		const imageType = Math.floor(Math.random() * 4) + 1;
 		let width, height;
 
 		if (this.imagesReady && this.images[`iceberg${imageType}`]) {
-			// Use image natural dimensions scaled to appropriate game size (tripled)
+			// Use image natural dimensions scaled to appropriate game size (tripled, with mobile scaling)
 			const image = this.images[`iceberg${imageType}`];
 			const imageAspect = image.naturalWidth / image.naturalHeight;
-			const baseHeight = 270 + Math.random() * 180; // 270-450px height range (tripled)
+			const baseHeight = (270 + Math.random() * 180) * this.mobileScaleFactor; // Apply mobile scale
 
 			height = baseHeight;
 			width = height * imageAspect;
 		} else {
-			// Fallback dimensions for when images aren't loaded (tripled)
-			width = 360 + Math.random() * 270;
-			height = 180 + Math.random() * 180;
+			// Fallback dimensions for when images aren't loaded (tripled, with mobile scaling)
+			width = (360 + Math.random() * 270) * this.mobileScaleFactor;
+			height = (180 + Math.random() * 180) * this.mobileScaleFactor;
 		}
 
 		const newIcebergX = startX + horizontalDistance;
@@ -863,8 +877,9 @@ class PenguinGlider {
 		// Penguin can jump ~144px high with jump power -12 and gravity 0.5
 		const maxJumpHeight = (this.jumpPower * this.jumpPower) / (2 * this.gravity);
 
-		// Get the average iceberg height (updated to match current iceberg positioning)
-		const avgIcebergY = this.waterLevel - 360; // Average of current iceberg spawn range (340-380 pixels above water)
+		// Get the average iceberg height (updated to match current iceberg positioning, scaled for mobile)
+		const mobileHeightAdjustment = this.isMobile ? 50 : 0; // Match the height adjustment (reduced from 100px)
+		const avgIcebergY = this.waterLevel - 360 * this.mobileScaleFactor - mobileHeightAdjustment; // Apply mobile scaling and height adjustment
 
 		// 70% chance to spawn fish at easily reachable heights
 		// 30% chance to spawn fish that require good timing/gliding
