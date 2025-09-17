@@ -1,6 +1,9 @@
 // Penguin Glider Game
 class PenguinGlider {
 	constructor() {
+		// Debug settings
+		this.showHitboxes = false; // Set to true to show collision hitboxes
+
 		this.canvas = document.getElementById("gameCanvas");
 		this.ctx = this.canvas.getContext("2d");
 		this.scoreElement = document.getElementById("score");
@@ -584,9 +587,46 @@ class PenguinGlider {
 			height = 180 + Math.random() * 180;
 		}
 
+		const newIcebergX = startX + horizontalDistance;
+		let newIcebergY = minY + Math.random() * (maxY - minY);
+
+		// Check for overlapping icebergs and align tops if they overlap
+		const overlappingIcebergs = [];
+		for (let existingIceberg of this.icebergs) {
+			// Check if icebergs will overlap horizontally
+			const horizontalOverlap = !(
+				newIcebergX + width < existingIceberg.x || existingIceberg.x + existingIceberg.width < newIcebergX
+			);
+
+			if (horizontalOverlap) {
+				// Calculate how much they overlap
+				const overlapStart = Math.max(newIcebergX, existingIceberg.x);
+				const overlapEnd = Math.min(newIcebergX + width, existingIceberg.x + existingIceberg.width);
+				const overlapWidth = overlapEnd - overlapStart;
+				const overlapPercentage = overlapWidth / Math.min(width, existingIceberg.width);
+
+				// If significant overlap (more than 20%), add to overlapping list
+				if (overlapPercentage > 0.2) {
+					overlappingIcebergs.push(existingIceberg);
+				}
+			}
+		}
+
+		// If there are overlapping icebergs, align all tops to the highest one
+		if (overlappingIcebergs.length > 0) {
+			// Find the highest iceberg (lowest Y value) among overlapping ones
+			const highestY = Math.min(...overlappingIcebergs.map((iceberg) => iceberg.y));
+			newIcebergY = highestY; // Align to the highest top
+
+			// Also align all other overlapping icebergs to this height
+			overlappingIcebergs.forEach((iceberg) => {
+				iceberg.y = highestY;
+			});
+		}
+
 		const iceberg = {
-			x: startX + horizontalDistance,
-			y: minY + Math.random() * (maxY - minY),
+			x: newIcebergX,
+			y: newIcebergY,
 			width: width,
 			height: height,
 			imageType: imageType,
@@ -916,9 +956,24 @@ class PenguinGlider {
 					continue;
 				}
 
-				// Determine collision direction and response
+				// Special case: Allow horizontal movement when penguin is standing on top of iceberg
+				// Check if penguin is just standing on the surface (not deeply embedded)
+				const standingOnSurface =
+					prevY + penguinHeight >= iceberg.y - 5 && // Close to top surface
+					prevY + penguinHeight <= iceberg.y + 15 && // Not too deep inside
+					this.penguin.onIceberg; // Confirmed to be on an iceberg
+
 				const moveX = newX - prevX;
 				const moveY = newY - prevY;
+
+				// If standing on surface and only moving horizontally, allow movement
+				if (standingOnSurface && Math.abs(moveY) <= 2) {
+					// Check if this is primarily horizontal movement
+					if (Math.abs(moveX) > Math.abs(moveY)) {
+						// Allow horizontal gliding across aligned icebergs
+						continue;
+					}
+				}
 
 				// Calculate overlap amounts for each direction
 				const overlapLeft = prevX + penguinWidth - iceberg.x;
@@ -1397,6 +1452,11 @@ class PenguinGlider {
 			this.ctx.stroke();
 		}
 
+		// Draw all hitboxes for debugging (if enabled)
+		if (this.showHitboxes) {
+			this.drawAllHitboxes();
+		}
+
 		// Restore context (end camera transformation)
 		this.ctx.restore();
 	}
@@ -1536,6 +1596,51 @@ class PenguinGlider {
 			this.ctx.arc(sparkleX, sparkleY, 2, 0, Math.PI * 2);
 			this.ctx.fill();
 		}
+	}
+
+	// Add hitbox visualization method
+	drawHitbox(x, y, width, height, color = "red", label = "") {
+		this.ctx.save();
+		this.ctx.strokeStyle = color;
+		this.ctx.lineWidth = 2;
+		this.ctx.strokeRect(x, y, width, height);
+
+		if (label) {
+			this.ctx.fillStyle = color;
+			this.ctx.font = "12px Arial";
+			this.ctx.fillText(label, x, y - 5);
+		}
+		this.ctx.restore();
+	}
+
+	drawAllHitboxes() {
+		// Draw penguin hitbox
+		this.drawHitbox(this.penguin.x, this.penguin.y, this.penguin.width, this.penguin.height, "lime", "Penguin");
+
+		// Draw iceberg hitboxes
+		for (let i = 0; i < this.icebergs.length; i++) {
+			const iceberg = this.icebergs[i];
+			this.drawHitbox(iceberg.x, iceberg.y, iceberg.width, iceberg.height, "cyan", `Iceberg ${i + 1}`);
+		}
+
+		// Draw fish hitboxes
+		for (let i = 0; i < this.fish.length; i++) {
+			const fish = this.fish[i];
+			this.drawHitbox(fish.x, fish.y, fish.width, fish.height, "yellow", `Fish ${i + 1}`);
+		}
+
+		// Draw water level line
+		this.ctx.save();
+		this.ctx.strokeStyle = "blue";
+		this.ctx.lineWidth = 3;
+		this.ctx.beginPath();
+		this.ctx.moveTo(this.camera.x - this.canvas.width, this.waterLevel);
+		this.ctx.lineTo(this.camera.x + this.canvas.width * 2, this.waterLevel);
+		this.ctx.stroke();
+		this.ctx.fillStyle = "blue";
+		this.ctx.font = "16px Arial";
+		this.ctx.fillText("Water Level", this.camera.x + 10, this.waterLevel - 10);
+		this.ctx.restore();
 	}
 
 	gameLoop(currentTime = 0) {
