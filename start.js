@@ -100,7 +100,7 @@ window.addEventListener("DOMContentLoaded", function () {
 			document.body.appendChild(text);
 
 			var playBtn = document.createElement("img");
-			playBtn.src = "img/Play.png";
+			playBtn.src = "img/play.png";
 			playBtn.alt = "Play";
 			playBtn.id = "playBtn";
 			playBtn.style.position = "fixed";
