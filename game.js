@@ -806,7 +806,7 @@ class PenguinGlider {
 		if (this.keys["ArrowRight"] || this.keys["KeyD"]) {
 			this.penguin.velocityX = Math.min(this.penguin.velocityX + acceleration, maxSpeed);
 		} // Jump/Glide
-		if ((this.keys["ArrowUp"] || this.keys["KeyW"]) && this.penguin.onIceberg) {
+		if ((this.keys["ArrowUp"] || this.keys["KeyW"] || this.keys["Space"]) && this.penguin.onIceberg) {
 			this.penguin.velocityY = this.jumpPower;
 			this.penguin.onIceberg = false;
 			this.penguin.gliding = true;
@@ -815,7 +815,11 @@ class PenguinGlider {
 		}
 
 		// Gliding control
-		if ((this.keys["ArrowUp"] || this.keys["KeyW"]) && !this.penguin.onIceberg && this.penguin.velocityY > 0) {
+		if (
+			(this.keys["ArrowUp"] || this.keys["KeyW"] || this.keys["Space"]) &&
+			!this.penguin.onIceberg &&
+			this.penguin.velocityY > 0
+		) {
 			this.penguin.velocityY += this.gravity * 0.3 * deltaMultiplier; // Slower fall when gliding
 			this.penguin.gliding = true;
 
