@@ -1474,7 +1474,7 @@ class PenguinGlider {
 
 	gameOver() {
 		this.gameState = "gameOver";
-		this.stopBackgroundMusic();
+		this.stopBackgroundMusicWithFade();
 		this.gameOverElement.style.display = "block";
 
 		// Create and position the try again button image
@@ -1709,7 +1709,7 @@ class PenguinGlider {
 
 	levelWin() {
 		this.gameState = "won";
-		this.stopBackgroundMusic();
+		this.stopBackgroundMusicWithFade();
 		this.timer.stop();
 		this.timer.hide();
 		this.scoreContainer.style.display = "none";
@@ -1727,19 +1727,36 @@ class PenguinGlider {
 	}
 
 	restart() {
+		// Stop and clean up any existing background music
+		this.stopBackgroundMusic();
+
+		// Completely destroy and recreate the music instance to avoid any state issues
+		this.backgroundMusic = null;
+
+		// Clean up existing UI elements to prevent duplicates
+		if (this.scoreContainer && this.scoreContainer.parentNode) {
+			this.scoreContainer.parentNode.removeChild(this.scoreContainer);
+		}
+		if (this.progressSystemContainer && this.progressSystemContainer.parentNode) {
+			this.progressSystemContainer.parentNode.removeChild(this.progressSystemContainer);
+		}
+
 		this.gameState = "playing";
 		this.score = 0;
 		this.fromRestart = true;
 		this.timer.reset();
 		this.timer.show();
 		this.timer.start();
-		this.startBackgroundMusic();
+
+		// Reset penguin position
 		this.penguin.x = 100;
 		this.penguin.y = 300;
 		this.penguin.velocityX = 0;
 		this.penguin.velocityY = 0;
 		this.penguin.onIceberg = false;
 		this.penguin.gliding = false;
+
+		// Clear game objects
 		this.icebergs = [];
 		this.fish = [];
 		this.glideTimer = 0;
@@ -1757,7 +1774,6 @@ class PenguinGlider {
 		this.distanceTraveled = 0;
 		this.levelProgress = 0;
 		this.levelCompleted = false;
-		this.updateProgressBar();
 
 		// Reset fish tracking
 		this.fishSpawned = 0;
@@ -1769,14 +1785,34 @@ class PenguinGlider {
 		this.finalIcebergPosition = this.levelLength - 200;
 		this.preFinalIcebergGenerated = false;
 
+		// Recreate UI elements
+		this.createScoreDisplay();
+		this.createProgressBar();
+		this.updateProgressBar();
+
+		// Reset game world
 		this.generateInitialIcebergs();
 		this.positionPenguinOnFirstIceberg(); // Position penguin on first iceberg after restart
 		this.generateSnowflakes(); // Regenerate snowflakes for new camera position
+
+		// Hide game over/win screens
 		this.gameOverElement.style.display = "none";
 		this.winScreenElement.style.display = "none";
+
+		// Update displays
 		this.updateScoreDisplay();
 		this.scoreContainer.style.display = "block";
 		this.progressSystemContainer.style.display = "block";
+
+		// Recreate background music instance fresh
+		if (typeof BackgroundMusic !== "undefined") {
+			this.backgroundMusic = new BackgroundMusic();
+		}
+
+		// Start background music after everything is set up (longer delay to ensure cleanup is complete)
+		setTimeout(async () => {
+			await this.startBackgroundMusic();
+		}, 300);
 	}
 
 	render() {
@@ -2370,17 +2406,41 @@ class PenguinGlider {
 	}
 
 	// Background music control methods
-	startBackgroundMusic() {
-		if (this.backgroundMusic && !this.backgroundMusic.playing) {
-			console.log("Starting background music");
-			this.backgroundMusic.start();
+	async startBackgroundMusic() {
+		console.log("startBackgroundMusic called, backgroundMusic exists:", !!this.backgroundMusic);
+
+		if (!this.backgroundMusic) {
+			console.log("No background music instance available");
+			return;
+		}
+
+		try {
+			console.log("Starting background music, current playing state:", this.backgroundMusic.playing);
+			await this.backgroundMusic.start();
+			console.log("Background music start completed");
+		} catch (error) {
+			console.error("Failed to start background music:", error);
 		}
 	}
 
 	stopBackgroundMusic() {
+		console.log("stopBackgroundMusic called, backgroundMusic exists:", !!this.backgroundMusic);
+
+		if (this.backgroundMusic) {
+			try {
+				console.log("Stopping background music");
+				this.backgroundMusic.stop();
+				console.log("Background music stop completed");
+			} catch (error) {
+				console.warn("Error stopping background music:", error);
+			}
+		}
+	}
+
+	stopBackgroundMusicWithFade() {
 		if (this.backgroundMusic && this.backgroundMusic.playing) {
-			console.log("Stopping background music");
-			this.backgroundMusic.fadeOut(1); // 1 second fade out
+			console.log("Stopping background music with fade");
+			this.backgroundMusic.fadeOut(1); // 1 second fade out for game over/win
 		}
 	}
 

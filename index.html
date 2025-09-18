@@ -401,7 +401,17 @@
 			}
 
 			// Restart game directly without showing start screen
+			let isRestarting = false; // Prevent rapid clicking
 			function restartGame() {
+				// Prevent rapid clicking
+				if (isRestarting) {
+					console.log("Restart already in progress, ignoring click");
+					return;
+				}
+
+				isRestarting = true;
+				console.log("Starting restart process");
+
 				const gameOver = document.getElementById("gameOver");
 				const winScreen = document.getElementById("winScreen");
 				gameOver.style.display = "none";
@@ -410,8 +420,43 @@
 				if (game) {
 					game.restart();
 				} else {
+					// Clean up any existing UI elements before creating new game
+					cleanupGameUI();
 					game = new PenguinGlider();
 				}
+
+				// Reset the restart flag after a delay to allow the restart to complete
+				setTimeout(() => {
+					isRestarting = false;
+					console.log("Restart process complete");
+				}, 500);
+			}
+
+			// Helper function to clean up existing game UI elements
+			function cleanupGameUI() {
+				// Remove any existing score containers
+				const existingScoreContainers = document.querySelectorAll('div[style*="fixed"][style*="right: 20px"]');
+				existingScoreContainers.forEach((container) => {
+					if (container.parentNode) {
+						container.parentNode.removeChild(container);
+					}
+				});
+
+				// Remove any existing progress containers
+				const existingProgressContainers = document.querySelectorAll('div[style*="fixed"][style*="left: 50%"]');
+				existingProgressContainers.forEach((container) => {
+					if (container.parentNode) {
+						container.parentNode.removeChild(container);
+					}
+				});
+
+				// Remove any existing game timer elements
+				const existingTimers = document.querySelectorAll("#gameTimer");
+				existingTimers.forEach((timer) => {
+					if (timer.parentNode) {
+						timer.parentNode.removeChild(timer);
+					}
+				});
 			}
 
 			// Function to return to start screen (if needed)

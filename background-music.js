@@ -228,49 +228,91 @@ class BackgroundMusic {
 		this.ambientFilter = filterNode;
 	}
 
+	// Check if audio context is healthy
+	isAudioContextHealthy() {
+		return (
+			this.audioContext &&
+			this.audioContext.state !== "closed" &&
+			this.masterGain &&
+			this.masterGain.context === this.audioContext
+		);
+	}
+
+	// Reinitialize audio system if needed
+	async reinitializeIfNeeded() {
+		if (!this.isAudioContextHealthy()) {
+			console.log("Audio context unhealthy, reinitializing...");
+			await this.initAudio();
+		}
+	}
+
 	// Start playing background music
 	async start() {
-		if (this.isPlaying) return;
+		console.log("BackgroundMusic.start() called, isPlaying:", this.isPlaying);
+
+		if (this.isPlaying) {
+			console.log("Background music already playing, skipping start");
+			return;
+		}
+
+		// Force stop any previous instance first
+		this.stop();
 
 		await this.resumeAudioContext();
 
 		if (!this.audioContext || !this.masterGain) {
-			console.warn("Audio context not available");
-			return;
+			console.warn("Audio context not available, reinitializing...");
+			await this.initAudio();
+
+			if (!this.audioContext || !this.masterGain) {
+				console.error("Failed to initialize audio context");
+				return;
+			}
 		}
+
+		// Small delay to ensure previous cleanup is complete
+		await new Promise((resolve) => setTimeout(resolve, 100));
 
 		this.isPlaying = true;
 		this.startTime = this.audioContext.currentTime;
 
-		console.log("Starting background music");
+		console.log("Starting background music with context state:", this.audioContext.state);
 
 		// Start all music layers
-		this.playMelody();
-		this.playHarmony();
-		this.playAmbientSounds();
+		try {
+			this.playMelody();
+			this.playHarmony();
+			this.playAmbientSounds();
+			console.log("All music layers started successfully");
+		} catch (error) {
+			console.error("Error starting music layers:", error);
+			this.isPlaying = false;
+		}
 	}
 
 	// Stop playing background music
 	stop() {
-		if (!this.isPlaying) return;
+		console.log("Stopping background music, isPlaying:", this.isPlaying);
 
 		this.isPlaying = false;
-		console.log("Stopping background music");
 
-		// Stop all oscillators
+		// Stop all oscillators with improved cleanup
 		this.oscillators.forEach(({ oscillator, gainNode, filterNode }) => {
 			try {
-				oscillator.stop();
+				if (oscillator.playbackState !== oscillator.FINISHED_STATE) {
+					oscillator.stop();
+				}
 				oscillator.disconnect();
 				gainNode.disconnect();
 				filterNode.disconnect();
 			} catch (e) {
 				// Ignore cleanup errors
+				console.log("Cleanup error (expected):", e.message);
 			}
 		});
 		this.oscillators = [];
 
-		// Stop ambient sounds
+		// Stop ambient sounds with improved cleanup
 		if (this.ambientSource) {
 			try {
 				this.ambientSource.stop();
@@ -279,8 +321,15 @@ class BackgroundMusic {
 				this.ambientFilter.disconnect();
 			} catch (e) {
 				// Ignore cleanup errors
+				console.log("Ambient cleanup error (expected):", e.message);
 			}
+			this.ambientSource = null;
+			this.ambientGain = null;
+			this.ambientFilter = null;
 		}
+
+		// Clear any scheduled notes
+		this.scheduledNotes = [];
 	}
 
 	// Set volume (0.0 to 1.0)
