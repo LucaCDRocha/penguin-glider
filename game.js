@@ -2,7 +2,7 @@
 class PenguinGlider {
 	constructor() {
 		// Debug settings
-		this.showHitboxes = true; // Set to true to show collision hitboxes
+		this.showHitboxes = false; // Set to true to show collision hitboxes
 		this.timer = new GameTimer();
 		this.fromRestart = false;
 
