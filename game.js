@@ -960,7 +960,7 @@ class PenguinGlider {
 		// Update progress bar display
 		this.updateProgressBar();
 
-		// Check if level is completed
+		// Check if level is completed - but only if penguin is actually on the final iceberg
 		if (!this.levelCompleted && this.levelProgress >= 1) {
 			this.checkLevelCompletion();
 		}
@@ -1146,21 +1146,27 @@ class PenguinGlider {
 		// Safety function to ensure penguin is never stuck inside an iceberg
 		// Use larger margins to be less sensitive and reduce shakiness
 		for (let iceberg of this.icebergs) {
+			// Use collider properties if they exist (for final iceberg), otherwise use full dimensions
+			const icebergX = iceberg.colliderX !== undefined ? iceberg.colliderX : iceberg.x;
+			const icebergY = iceberg.colliderY !== undefined ? iceberg.colliderY : iceberg.y;
+			const icebergWidth = iceberg.colliderWidth !== undefined ? iceberg.colliderWidth : iceberg.width;
+			const icebergHeight = iceberg.colliderHeight !== undefined ? iceberg.colliderHeight : iceberg.height;
+
 			// Check if penguin is deeply inside this iceberg (not just touching edges)
 			const isInsideHorizontally =
-				this.penguin.x + this.penguin.width > iceberg.x + 15 && this.penguin.x < iceberg.x + iceberg.width - 15;
+				this.penguin.x + this.penguin.width > icebergX + 15 && this.penguin.x < icebergX + icebergWidth - 15;
 
 			const isInsideVertically =
-				this.penguin.y + this.penguin.height > iceberg.y + 15 && this.penguin.y < iceberg.y + iceberg.height - 15;
+				this.penguin.y + this.penguin.height > icebergY + 15 && this.penguin.y < icebergY + icebergHeight - 15;
 
 			if (isInsideHorizontally && isInsideVertically) {
 				// Penguin is deeply stuck inside iceberg! Apply gentle correction
 
 				// Calculate distances to each edge
-				const distanceToTop = Math.abs(this.penguin.y + this.penguin.height - iceberg.y);
-				const distanceToBottom = Math.abs(this.penguin.y - (iceberg.y + iceberg.height));
-				const distanceToLeft = Math.abs(this.penguin.x + this.penguin.width - iceberg.x);
-				const distanceToRight = Math.abs(this.penguin.x - (iceberg.x + iceberg.width));
+				const distanceToTop = Math.abs(this.penguin.y + this.penguin.height - icebergY);
+				const distanceToBottom = Math.abs(this.penguin.y - (icebergY + icebergHeight));
+				const distanceToLeft = Math.abs(this.penguin.x + this.penguin.width - icebergX);
+				const distanceToRight = Math.abs(this.penguin.x - (icebergX + icebergWidth));
 
 				// Find the closest edge and gently push penguin out that way
 				const minDistance = Math.min(distanceToTop, distanceToBottom, distanceToLeft, distanceToRight);
@@ -1170,24 +1176,24 @@ class PenguinGlider {
 
 				if (minDistance === distanceToTop) {
 					// Gently move penguin to top of iceberg
-					const targetY = iceberg.y - this.penguin.height;
+					const targetY = icebergY - this.penguin.height;
 					this.penguin.y = this.penguin.y * (1 - smoothingFactor) + targetY * smoothingFactor;
 					this.penguin.velocityY = Math.min(this.penguin.velocityY, -1); // Gentle upward correction
 					this.penguin.onIceberg = true;
 				} else if (minDistance === distanceToBottom) {
 					// Gently move penguin below iceberg
-					const targetY = iceberg.y + iceberg.height;
+					const targetY = icebergY + icebergHeight;
 					this.penguin.y = this.penguin.y * (1 - smoothingFactor) + targetY * smoothingFactor;
 					this.penguin.velocityY = Math.max(this.penguin.velocityY, 1); // Gentle downward correction
 					this.penguin.onIceberg = false;
 				} else if (minDistance === distanceToLeft) {
 					// Gently move penguin to left of iceberg
-					const targetX = iceberg.x - this.penguin.width;
+					const targetX = icebergX - this.penguin.width;
 					this.penguin.x = this.penguin.x * (1 - smoothingFactor) + targetX * smoothingFactor;
 					this.penguin.velocityX = Math.min(this.penguin.velocityX, -1); // Gentle leftward correction
 				} else {
 					// Gently move penguin to right of iceberg
-					const targetX = iceberg.x + iceberg.width;
+					const targetX = icebergX + icebergWidth;
 					this.penguin.x = this.penguin.x * (1 - smoothingFactor) + targetX * smoothingFactor;
 					this.penguin.velocityX = Math.max(this.penguin.velocityX, 1); // Gentle rightward correction
 				}
@@ -1305,16 +1311,22 @@ class PenguinGlider {
 		this.penguin.onIceberg = false;
 
 		for (let iceberg of this.icebergs) {
+			// Use collider properties if they exist (for final iceberg), otherwise use full dimensions
+			const colliderX = iceberg.colliderX !== undefined ? iceberg.colliderX : iceberg.x;
+			const colliderY = iceberg.colliderY !== undefined ? iceberg.colliderY : iceberg.y;
+			const colliderWidth = iceberg.colliderWidth !== undefined ? iceberg.colliderWidth : iceberg.width;
+			const colliderHeight = iceberg.colliderHeight !== undefined ? iceberg.colliderHeight : iceberg.height;
+
 			// Check if penguin is on top of iceberg (more precise landing detection)
 			if (
-				this.penguin.x + this.penguin.width > iceberg.x + 5 && // Small margin from edges
-				this.penguin.x < iceberg.x + iceberg.width - 5 &&
-				this.penguin.y + this.penguin.height >= iceberg.y - 3 &&
-				this.penguin.y + this.penguin.height <= iceberg.y + 12 &&
+				this.penguin.x + this.penguin.width > colliderX + 5 && // Small margin from edges
+				this.penguin.x < colliderX + colliderWidth - 5 &&
+				this.penguin.y + this.penguin.height >= colliderY - 3 &&
+				this.penguin.y + this.penguin.height <= colliderY + 12 &&
 				this.penguin.velocityY >= -1 // Allow slight upward velocity for landing
 			) {
 				// Snap penguin to slightly into the iceberg surface for more realistic look
-				this.penguin.y = iceberg.y - this.penguin.height + 3;
+				this.penguin.y = colliderY - this.penguin.height + 3;
 				this.penguin.velocityY = 0;
 				this.penguin.onIceberg = true;
 				this.penguin.gliding = false;
@@ -1583,16 +1595,43 @@ class PenguinGlider {
 	}
 
 	checkLevelCompletion() {
-		this.levelCompleted = true;
+		// Check if penguin is actually on the final iceberg, not just reached the distance
+		let onFinalIceberg = false;
+		for (let iceberg of this.icebergs) {
+			if (iceberg.isFinalIceberg) {
+				// Use collider properties for final iceberg landing detection
+				const colliderX = iceberg.colliderX !== undefined ? iceberg.colliderX : iceberg.x;
+				const colliderY = iceberg.colliderY !== undefined ? iceberg.colliderY : iceberg.y;
+				const colliderWidth = iceberg.colliderWidth !== undefined ? iceberg.colliderWidth : iceberg.width;
+				const colliderHeight = iceberg.colliderHeight !== undefined ? iceberg.colliderHeight : iceberg.height;
 
-		// Check win conditions: enough fish and time remaining
-		const hasEnoughFish = this.score >= this.minFishRequired;
-		const hasTimeLeft = this.timer.remainingTime > 0;
+				// Check if penguin is standing on the final iceberg collision area
+				if (
+					this.penguin.x + this.penguin.width > colliderX + 5 &&
+					this.penguin.x < colliderX + colliderWidth - 5 &&
+					this.penguin.y + this.penguin.height >= colliderY - 3 &&
+					this.penguin.y + this.penguin.height <= colliderY + 12 &&
+					this.penguin.onIceberg
+				) {
+					onFinalIceberg = true;
+					break;
+				}
+			}
+		}
 
-		if (hasEnoughFish && hasTimeLeft) {
-			this.levelWin();
-		} else {
-			this.gameOver(); // Failed to meet win conditions
+		// Only complete the level if penguin is actually on the final iceberg
+		if (onFinalIceberg) {
+			this.levelCompleted = true;
+
+			// Check win conditions: enough fish and time remaining
+			const hasEnoughFish = this.score >= this.minFishRequired;
+			const hasTimeLeft = this.timer.remainingTime > 0;
+
+			if (hasEnoughFish && hasTimeLeft) {
+				this.levelWin();
+			} else {
+				this.gameOver(); // Failed to meet win conditions
+			}
 		}
 	}
 
@@ -2174,7 +2213,14 @@ class PenguinGlider {
 		// Draw iceberg hitboxes
 		for (let i = 0; i < this.icebergs.length; i++) {
 			const iceberg = this.icebergs[i];
-			this.drawHitbox(iceberg.x, iceberg.y, iceberg.width, iceberg.height, "cyan", `Iceberg ${i + 1}`);
+
+			// Use collider properties if they exist (for final iceberg), otherwise use full dimensions
+			const hitboxX = iceberg.colliderX !== undefined ? iceberg.colliderX : iceberg.x;
+			const hitboxY = iceberg.colliderY !== undefined ? iceberg.colliderY : iceberg.y;
+			const hitboxWidth = iceberg.colliderWidth !== undefined ? iceberg.colliderWidth : iceberg.width;
+			const hitboxHeight = iceberg.colliderHeight !== undefined ? iceberg.colliderHeight : iceberg.height;
+
+			this.drawHitbox(hitboxX, hitboxY, hitboxWidth, hitboxHeight, "cyan", `Iceberg ${i + 1}`);
 		}
 
 		// Draw fish hitboxes
