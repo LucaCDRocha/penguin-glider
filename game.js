@@ -45,8 +45,6 @@ class PenguinGlider {
 
 		// Fish for collecting points
 		this.fish = [];
-		this.fishSpawnTimer = 0;
-		this.fishSpawnRate = 120; // spawn every 2 seconds at 60fps
 
 		// Water level (will be calculated properly after canvas setup)
 		this.waterLevel = 400; // Default value, will be recalculated
@@ -541,14 +539,6 @@ class PenguinGlider {
 		return { minY, maxY };
 	}
 
-	// Helper: Get the allowed Y range for fish (always above average iceberg)
-	getFishYRange(avgIcebergY, maxJumpHeight) {
-		// Fish always above icebergs, but with some challenge
-		const minY = Math.max(50, avgIcebergY - maxJumpHeight * 0.9);
-		const maxY = Math.min(this.waterLevel - 100, avgIcebergY - 30);
-		return { minY, maxY };
-	}
-
 	generateInitialIcebergs() {
 		// Starting iceberg - use image dimensions if available (tripled size, with mobile scaling)
 		let startWidth = 540 * this.mobileScaleFactor,
@@ -668,6 +658,12 @@ class PenguinGlider {
 		};
 
 		this.icebergs.push(iceberg);
+
+		// 30% chance to spawn a fish on top of this iceberg
+		if (Math.random() < 0.3) {
+			this.spawnFishOnIceberg(iceberg);
+		}
+
 		return newIcebergY;
 	}
 
@@ -875,13 +871,6 @@ class PenguinGlider {
 	}
 
 	updateFish(deltaMultiplier = 1) {
-		// Spawn new fish
-		this.fishSpawnTimer += deltaMultiplier;
-		if (this.fishSpawnTimer >= this.fishSpawnRate) {
-			this.spawnFish();
-			this.fishSpawnTimer = 0;
-		}
-
 		// Animate fish (no need to move them left since camera follows penguin)
 		for (let fish of this.fish) {
 			fish.animationTimer += 0.1 * deltaMultiplier;
@@ -894,27 +883,18 @@ class PenguinGlider {
 		this.fish = this.fish.filter((fish) => fish.x + fish.width > this.camera.x - 200);
 	}
 
-	spawnFish() {
-		// Calculate reachable height range based on penguin physics
-		const maxJumpHeight = (this.jumpPower * this.jumpPower) / (2 * this.gravity);
-		// Use the average y of the last 3 icebergs for more dynamic fish placement
-		let avgIcebergY = 0;
-		if (this.icebergs.length > 0) {
-			const count = Math.min(3, this.icebergs.length);
-			avgIcebergY = this.icebergs.slice(-count).reduce((sum, ib) => sum + ib.y, 0) / count;
-		} else {
-			const mobileHeightAdjustment = this.isMobile ? 50 : 0;
-			avgIcebergY = this.waterLevel - 360 * this.mobileScaleFactor - mobileHeightAdjustment;
-		}
-		// Always spawn fish above icebergs, within a reasonable jump range
-		const { minY, maxY } = this.getFishYRange(avgIcebergY, maxJumpHeight);
-		const fishY = minY + Math.random() * (maxY - minY);
+	spawnFishOnIceberg(iceberg) {
+		// Spawn a fish directly on top of the iceberg
+		const fishMargin = 20; // Small margin from iceberg edges
+		const fishX = iceberg.x + fishMargin + Math.random() * (iceberg.width - 2 * fishMargin - 40); // 40 is fish width
+		const fishY = iceberg.y - 24; // 24 is fish height, position just above iceberg top
+
 		const fish = {
-			x: this.camera.x + this.canvas.width + 50,
+			x: fishX,
 			y: fishY,
 			width: 40,
 			height: 24,
-			animationTimer: 0,
+			animationTimer: Math.random() * Math.PI * 2, // Random starting animation phase
 			collected: false,
 			imageType: Math.floor(Math.random() * 4) + 1,
 		};
@@ -1170,7 +1150,6 @@ class PenguinGlider {
 		this.penguin.gliding = false;
 		this.icebergs = [];
 		this.fish = [];
-		this.fishSpawnTimer = 0;
 		this.glideTimer = 0;
 		this.particles = [];
 		this.snowflakes = []; // Clear existing snowflakes
