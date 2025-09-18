@@ -172,6 +172,7 @@ window.addEventListener("DOMContentLoaded", function () {
 					window.game = tempGame;
 					tempGame.fromRestart = false; // Ensure it's treated as a fresh start
 					tempGame.timer.start(); // Start the timer
+					tempGame.startBackgroundMusic(); // Start background music
 					// Hide start screen and begin gameplay
 					const startScreen = document.getElementById("startScreen");
 					if (startScreen) {

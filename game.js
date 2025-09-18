@@ -101,6 +101,13 @@ class PenguinGlider {
 		this.sounds = {};
 		this.glideTimer = 0;
 
+		// Background music system
+		this.backgroundMusic = null;
+		this.musicKeyPressed = false; // Track M key press state
+		if (typeof BackgroundMusic !== "undefined") {
+			this.backgroundMusic = new BackgroundMusic();
+		}
+
 		// Image loading system
 		this.images = {};
 		this.imagesLoaded = 0;
@@ -165,6 +172,7 @@ class PenguinGlider {
 					// Initial timer start - only if autoStart is enabled and not from restart
 					if (this.autoStart && !this.fromRestart) {
 						this.timer.start();
+						this.startBackgroundMusic();
 					}
 				}
 			};
@@ -178,6 +186,7 @@ class PenguinGlider {
 					this.timer.setTimeUpCallback(() => this.gameOver());
 					if (this.autoStart && !this.fromRestart) {
 						this.timer.start();
+						this.startBackgroundMusic();
 					}
 				}
 			};
@@ -821,6 +830,14 @@ class PenguinGlider {
 			this.penguin.gliding = false;
 			this.glideTimer = 0;
 		}
+
+		// Music toggle (M key) - only trigger once per key press
+		if (this.keys["KeyM"] && !this.musicKeyPressed) {
+			this.toggleBackgroundMusic();
+			this.musicKeyPressed = true;
+		} else if (!this.keys["KeyM"]) {
+			this.musicKeyPressed = false;
+		}
 	}
 
 	updatePenguin(deltaMultiplier = 1) {
@@ -1453,6 +1470,7 @@ class PenguinGlider {
 
 	gameOver() {
 		this.gameState = "gameOver";
+		this.stopBackgroundMusic();
 		this.gameOverElement.style.display = "block";
 
 		// Create and position the try again button image
@@ -1687,6 +1705,7 @@ class PenguinGlider {
 
 	levelWin() {
 		this.gameState = "won";
+		this.stopBackgroundMusic();
 		this.timer.stop();
 		this.timer.hide();
 		this.scoreContainer.style.display = "none";
@@ -1710,6 +1729,7 @@ class PenguinGlider {
 		this.timer.reset();
 		this.timer.show();
 		this.timer.start();
+		this.startBackgroundMusic();
 		this.penguin.x = 100;
 		this.penguin.y = 300;
 		this.penguin.velocityX = 0;
@@ -2343,6 +2363,32 @@ class PenguinGlider {
 		this.update(deltaMultiplier);
 		this.render();
 		requestAnimationFrame((time) => this.gameLoop(time));
+	}
+
+	// Background music control methods
+	startBackgroundMusic() {
+		if (this.backgroundMusic && !this.backgroundMusic.playing) {
+			console.log("Starting background music");
+			this.backgroundMusic.start();
+		}
+	}
+
+	stopBackgroundMusic() {
+		if (this.backgroundMusic && this.backgroundMusic.playing) {
+			console.log("Stopping background music");
+			this.backgroundMusic.fadeOut(1); // 1 second fade out
+		}
+	}
+
+	// Toggle background music on/off
+	toggleBackgroundMusic() {
+		if (this.backgroundMusic) {
+			if (this.backgroundMusic.playing) {
+				this.stopBackgroundMusic();
+			} else {
+				this.startBackgroundMusic();
+			}
+		}
 	}
 }
 
