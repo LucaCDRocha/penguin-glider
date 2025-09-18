@@ -2,13 +2,15 @@
 class PenguinGlider {
 	constructor() {
 		// Debug settings
-		this.showHitboxes = false; // Set to true to show collision hitboxes
+		this.showHitboxes = true; // Set to true to show collision hitboxes
+		this.timer = new GameTimer();
+		this.fromRestart = false;
 
 		this.canvas = document.getElementById("gameCanvas");
 		this.ctx = this.canvas.getContext("2d");
-		this.scoreElement = document.getElementById("score");
 		this.gameOverElement = document.getElementById("gameOver");
 		this.finalScoreElement = document.getElementById("finalScore");
+		this.createScoreDisplay();
 
 		// Calculate mobile scale factor based on screen size
 		this.isMobile = window.innerWidth < 768 || window.innerHeight < 500;
@@ -115,6 +117,8 @@ class PenguinGlider {
 			"cloud3.png",
 			"cloud4.png",
 			"cloud5.png",
+			"snow1.png",
+			"try-again.png",
 		];
 
 		this.totalImages = imageList.length;
@@ -127,6 +131,12 @@ class PenguinGlider {
 				if (this.imagesLoaded === this.totalImages) {
 					this.imagesReady = true;
 					this.init(); // Start the game once all images are loaded
+					// Set up timer to end game when time runs out
+					this.timer.setTimeUpCallback(() => this.gameOver());
+					// Initial timer start
+					if (!this.fromRestart) {
+						this.timer.start();
+					}
 				}
 			};
 			img.onerror = () => {
@@ -813,6 +823,12 @@ class PenguinGlider {
 			this.penguin.y = newY;
 		}
 
+		// SAFETY CHECK: Only validate when penguin is moving significantly or falling
+		const isMovingSignificantly = Math.abs(this.penguin.velocityX) > 1 || Math.abs(this.penguin.velocityY) > 3;
+		if (isMovingSignificantly) {
+			this.validatePenguinPosition();
+		}
+
 		// Update camera to follow penguin
 		this.updateCamera(deltaMultiplier);
 
@@ -934,25 +950,82 @@ class PenguinGlider {
 		}
 	}
 
+	validatePenguinPosition() {
+		// Safety function to ensure penguin is never stuck inside an iceberg
+		// Use larger margins to be less sensitive and reduce shakiness
+		for (let iceberg of this.icebergs) {
+			// Check if penguin is deeply inside this iceberg (not just touching edges)
+			const isInsideHorizontally =
+				this.penguin.x + this.penguin.width > iceberg.x + 15 && this.penguin.x < iceberg.x + iceberg.width - 15;
+
+			const isInsideVertically =
+				this.penguin.y + this.penguin.height > iceberg.y + 15 && this.penguin.y < iceberg.y + iceberg.height - 15;
+
+			if (isInsideHorizontally && isInsideVertically) {
+				// Penguin is deeply stuck inside iceberg! Apply gentle correction
+
+				// Calculate distances to each edge
+				const distanceToTop = Math.abs(this.penguin.y + this.penguin.height - iceberg.y);
+				const distanceToBottom = Math.abs(this.penguin.y - (iceberg.y + iceberg.height));
+				const distanceToLeft = Math.abs(this.penguin.x + this.penguin.width - iceberg.x);
+				const distanceToRight = Math.abs(this.penguin.x - (iceberg.x + iceberg.width));
+
+				// Find the closest edge and gently push penguin out that way
+				const minDistance = Math.min(distanceToTop, distanceToBottom, distanceToLeft, distanceToRight);
+
+				// Use smoother positioning with interpolation to reduce shakiness
+				const smoothingFactor = 0.3; // Blend between current and target position
+
+				if (minDistance === distanceToTop) {
+					// Gently move penguin to top of iceberg
+					const targetY = iceberg.y - this.penguin.height;
+					this.penguin.y = this.penguin.y * (1 - smoothingFactor) + targetY * smoothingFactor;
+					this.penguin.velocityY = Math.min(this.penguin.velocityY, -1); // Gentle upward correction
+					this.penguin.onIceberg = true;
+				} else if (minDistance === distanceToBottom) {
+					// Gently move penguin below iceberg
+					const targetY = iceberg.y + iceberg.height;
+					this.penguin.y = this.penguin.y * (1 - smoothingFactor) + targetY * smoothingFactor;
+					this.penguin.velocityY = Math.max(this.penguin.velocityY, 1); // Gentle downward correction
+					this.penguin.onIceberg = false;
+				} else if (minDistance === distanceToLeft) {
+					// Gently move penguin to left of iceberg
+					const targetX = iceberg.x - this.penguin.width;
+					this.penguin.x = this.penguin.x * (1 - smoothingFactor) + targetX * smoothingFactor;
+					this.penguin.velocityX = Math.min(this.penguin.velocityX, -1); // Gentle leftward correction
+				} else {
+					// Gently move penguin to right of iceberg
+					const targetX = iceberg.x + iceberg.width;
+					this.penguin.x = this.penguin.x * (1 - smoothingFactor) + targetX * smoothingFactor;
+					this.penguin.velocityX = Math.max(this.penguin.velocityX, 1); // Gentle rightward correction
+				}
+
+				// Stop here - only fix one iceberg collision per frame to avoid conflicts
+				break;
+			}
+		}
+	}
+
 	checkSolidCollisions(prevX, prevY, newX, newY) {
 		const penguinWidth = this.penguin.width;
 		const penguinHeight = this.penguin.height;
 
 		for (let iceberg of this.icebergs) {
 			// Check if the penguin's new position would overlap with the iceberg
+			// Use moderate bounds to prevent clipping while avoiding shakiness
 			const wouldOverlap =
-				newX < iceberg.x + iceberg.width &&
-				newX + penguinWidth > iceberg.x &&
-				newY < iceberg.y + iceberg.height &&
+				newX < iceberg.x + iceberg.width - 1 &&
+				newX + penguinWidth > iceberg.x + 1 &&
+				newY < iceberg.y + iceberg.height - 1 &&
 				newY + penguinHeight > iceberg.y - 3; // Consistent with landing detection
 
 			if (wouldOverlap) {
 				// Check if penguin was previously overlapping (already inside)
 				const wasOverlapping =
-					prevX < iceberg.x + iceberg.width &&
-					prevX + penguinWidth > iceberg.x &&
-					prevY < iceberg.y + iceberg.height &&
-					prevY + penguinHeight > iceberg.y - 3; // Consistent with landing detection
+					prevX < iceberg.x + iceberg.width - 1 &&
+					prevX + penguinWidth > iceberg.x + 1 &&
+					prevY < iceberg.y + iceberg.height - 1 &&
+					prevY + penguinHeight > iceberg.y - 3;
 
 				// If already overlapping, don't stop movement (let penguin escape)
 				if (wasOverlapping) {
@@ -1016,7 +1089,7 @@ class PenguinGlider {
 						correctedY: newY,
 					};
 				} else {
-					// Corner collision or complex case
+					// Corner collision or complex case - push to safe previous position
 					return {
 						type: "corner",
 						correctedX: prevX,
@@ -1071,8 +1144,8 @@ class PenguinGlider {
 			) {
 				// Fish collected!
 				fish.collected = true;
-				this.score += 10;
-				this.scoreElement.textContent = this.score;
+				this.score += 1;
+				this.updateScoreDisplay();
 
 				// Create collection particles
 				this.createFishCollectionParticles(fish.x + fish.width / 2, fish.y + fish.height / 2);
@@ -1134,14 +1207,116 @@ class PenguinGlider {
 
 	gameOver() {
 		this.gameState = "gameOver";
-		this.finalScoreElement.textContent = this.score;
 		this.gameOverElement.style.display = "block";
+		
+		// Create and position the try again button image
+		const tryAgainBtn = document.createElement('img');
+		tryAgainBtn.src = "img/try-again.png";
+		tryAgainBtn.style.position = "absolute";
+		tryAgainBtn.style.left = "50%";
+		tryAgainBtn.style.top = "50%";
+		tryAgainBtn.style.transform = "translate(-50%, -50%)";
+		tryAgainBtn.style.cursor = "pointer";
+
+		// Bigger and responsive
+		tryAgainBtn.style.width = "clamp(250px, 35vw, 400px)";
+		tryAgainBtn.style.height = "auto";
+
+		// Smooth hover effect
+		tryAgainBtn.style.transition = "transform 0.2s ease";
+
+		// Hover reaction: slightly enlarge
+		tryAgainBtn.addEventListener('mouseenter', () => {
+			tryAgainBtn.style.transform = "translate(-50%, -50%) scale(1.1)";
+		});
+		tryAgainBtn.addEventListener('mouseleave', () => {
+			tryAgainBtn.style.transform = "translate(-50%, -50%) scale(1)";
+		});
+
+		tryAgainBtn.onclick = restartGame;
+		
+		// Create loss reason text with timer font style
+		const lossReason = document.createElement('p');
+		lossReason.style.fontFamily = "'Share Tech Mono', monospace";
+		lossReason.style.position = "absolute";
+		lossReason.style.left = "50%";
+		lossReason.style.top = "calc(50% + 80px)";
+		lossReason.style.whiteSpace = "nowrap";
+		lossReason.style.transform = "translate(-50%, -50%)";
+		lossReason.style.fontSize = "clamp(14px, 3.5vw, 22px)";
+		lossReason.textContent = this.penguin.y > this.waterLevel ? "OOOOPS you fell in the icy water!" : "TIME'S UP!";
+		
+		// Clear any existing content
+		this.gameOverElement.innerHTML = '';
+		
+		// Add the new elements
+		this.gameOverElement.appendChild(lossReason);
+		this.gameOverElement.appendChild(tryAgainBtn);
+		
 		this.playSound("gameOver");
+		this.timer.stop();
+		this.timer.hide();
+		this.scoreContainer.style.display = "none";
+	}
+
+	createScoreDisplay() {
+		// Create container for score display
+		this.scoreContainer = document.createElement("div");
+		this.scoreContainer.style.position = "fixed";
+		this.scoreContainer.style.top = "max(20px, env(safe-area-inset-top, 20px))";
+		this.scoreContainer.style.right = "20px";
+		this.scoreContainer.style.fontFamily = "'Digital-7', 'LCD', monospace";
+		this.scoreContainer.style.zIndex = "10";
+
+		// Create score display with fish icon
+		this.scoreElement = document.createElement("div");
+		this.scoreElement.style.display = "flex";
+		this.scoreElement.style.alignItems = "center";
+		this.scoreElement.style.justifyContent = "flex-end";
+		this.scoreElement.style.color = "#000000";
+		this.scoreElement.style.fontSize = "clamp(36px, 6vw, 48px)";
+		this.scoreElement.style.fontWeight = "400";
+		this.scoreElement.style.letterSpacing = "2px";
+
+		// Create fish icon
+		this.fishIcon = document.createElement("img");
+		this.fishIcon.src = "img/fish4.png";
+		this.fishIcon.style.height = "clamp(24px, 4vw, 32px)";
+		this.fishIcon.style.marginRight = "8px";
+
+		// Create score text
+		this.scoreText = document.createElement("span");
+		this.scoreText.textContent = "x 0";
+
+		// Create message below
+		this.scoreMessage = document.createElement("div");
+		this.scoreMessage.textContent = "collect at least 10!";
+		this.scoreMessage.style.color = "#000000";
+		this.scoreMessage.style.fontSize = "clamp(16px, 3vw, 24px)";
+		this.scoreMessage.style.fontWeight = "400";
+		this.scoreMessage.style.textAlign = "right";
+		this.scoreMessage.style.marginTop = "4px";
+
+		// Assemble the elements
+		this.scoreElement.appendChild(this.fishIcon);
+		this.scoreElement.appendChild(this.scoreText);
+		this.scoreContainer.appendChild(this.scoreElement);
+		this.scoreContainer.appendChild(this.scoreMessage);
+		document.body.appendChild(this.scoreContainer);
+	}
+
+	updateScoreDisplay() {
+		this.scoreText.textContent = `x ${this.score}`;
+		this.scoreMessage.style.color = this.score >= 10 ? "#00ff00" : "#bc0000ff";
 	}
 
 	restart() {
 		this.gameState = "playing";
 		this.score = 0;
+		this.fromRestart = true;
+		this.timer.reset();
+		this.timer.show();
+		this.timer.start();
 		this.penguin.x = 100;
 		this.penguin.y = 300;
 		this.penguin.velocityX = 0;
@@ -1164,7 +1339,8 @@ class PenguinGlider {
 		this.positionPenguinOnFirstIceberg(); // Position penguin on first iceberg after restart
 		this.generateSnowflakes(); // Regenerate snowflakes for new camera position
 		this.gameOverElement.style.display = "none";
-		this.scoreElement.textContent = this.score;
+		this.updateScoreDisplay();
+		this.scoreContainer.style.display = "block";
 	}
 
 	render() {
@@ -1281,7 +1457,6 @@ class PenguinGlider {
 		}
 
 		// Draw snowflakes
-		this.ctx.fillStyle = "rgba(255, 255, 255, 0.8)";
 		for (let snowflake of this.snowflakes) {
 			// Only draw snowflakes that are visible in camera view
 			if (
@@ -1290,9 +1465,14 @@ class PenguinGlider {
 				snowflake.y > this.camera.y - 50 &&
 				snowflake.y < this.camera.y + this.canvas.height + 50
 			) {
-				this.ctx.beginPath();
-				this.ctx.arc(snowflake.x, snowflake.y, snowflake.size, 0, Math.PI * 2);
-				this.ctx.fill();
+				// Draw snow image
+				// Draw snow image
+				const img = this.images['snow1']; // only snow1
+				if (this.imagesReady && img) {
+					const size = 60;
+					const offset = size / 2;
+					this.ctx.drawImage(img, snowflake.x - offset, snowflake.y - offset, size, size);
+				}
 			}
 		}
 
