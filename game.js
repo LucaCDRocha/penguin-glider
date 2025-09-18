@@ -78,7 +78,7 @@ class PenguinGlider {
 		// Final level iceberg
 		this.finalIcebergGenerated = false; // Track if final iceberg has been created
 		this.finalIcebergPosition = this.levelLength - 200; // Position final iceberg near the end
-		this.preFinalIcebergGenerated = false; // Track if the iceberg before final has been created
+		this.preFinalIcebergGenerated = true; // Track if the iceberg before final has been created
 
 		// Fish distribution tracking
 		this.fishSpawned = 0; // Total fish spawned so far
@@ -957,7 +957,10 @@ class PenguinGlider {
 		this.distanceTraveled = Math.max(0, this.camera.x - this.startPosition);
 
 		// Calculate progress percentage (0-1)
-		this.levelProgress = Math.min(1, this.distanceTraveled / this.levelLength);
+		const actualProgress = Math.min(1, this.distanceTraveled / this.levelLength);
+
+		// Show progress bar slightly ahead of actual position (add 5% boost, but don't exceed 100%)
+		this.levelProgress = Math.min(1, actualProgress * 1.05);
 
 		// Update progress bar display
 		this.updateProgressBar();
