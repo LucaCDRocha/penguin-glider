@@ -124,7 +124,7 @@
 			}
 
 			.game-over p {
-				font-family: 'Digital-7', 'LCD', monospace;
+				font-family: "Digital-7", "LCD", monospace;
 				color: #000000;
 				font-size: clamp(16px, 4vw, 24px); /* smaller & adaptable */
 				font-weight: 200;
@@ -189,8 +189,6 @@
 				transform: scale(1.05);
 				box-shadow: 0 8px 25px rgba(74, 144, 226, 0.6);
 			}
-
-
 
 			/* Mobile Controls */
 			.mobile-controls {
@@ -360,15 +358,22 @@
 
 		<!-- Mobile Touch Controls -->
 		<div class="mobile-controls" id="mobileControls">
-			<button class="control-button" id="leftBtn"><img src="img/left.png" alt="Left" style="width: 100%; height: 100%; object-fit: contain;"></button>
-			<button class="control-button jump-button" id="jumpBtn"><img src="img/jump.png" alt="Jump/Glide" style="width: 100%; height: 100%; object-fit: contain;"></button>
-			<button class="control-button" id="rightBtn"><img src="img/right.png" alt="Right" style="width: 100%; height: 100%; object-fit: contain;"></button>
+			<button class="control-button" id="leftBtn">
+				<img src="img/left.png" alt="Left" style="width: 100%; height: 100%; object-fit: contain" />
+			</button>
+			<button class="control-button jump-button" id="jumpBtn">
+				<img src="img/jump.png" alt="Jump/Glide" style="width: 100%; height: 100%; object-fit: contain" />
+			</button>
+			<button class="control-button" id="rightBtn">
+				<img src="img/right.png" alt="Right" style="width: 100%; height: 100%; object-fit: contain" />
+			</button>
 		</div>
 
 		<!-- Game Over Display -->
 		<div class="game-over" id="gameOver">
-			<img src="img/try-again.png" onclick="restartGame()" alt="Try Again">
-			<br><br><p> OOOOPS you fell in the icy water!</p>
+			<img src="img/try-again.png" onclick="restartGame()" alt="Try Again" />
+			<br /><br />
+			<p>OOOOPS you fell in the icy water!</p>
 		</div>
 
 		<!-- Win Screen Modal -->
@@ -387,9 +392,9 @@
 				const startScreen = document.getElementById("startScreen");
 				startScreen.style.display = "none";
 
-				// Initialize and start the game
+				// Initialize and start the game with default autoStart behavior
 				if (typeof game === "undefined") {
-					game = new PenguinGlider();
+					game = new PenguinGlider(); // Default autoStart = true
 				} else {
 					game.restart();
 				}

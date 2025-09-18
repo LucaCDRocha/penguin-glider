@@ -1,10 +1,11 @@
 // Penguin Glider Game
 class PenguinGlider {
-	constructor() {
+	constructor(autoStart = true) {
 		// Debug settings
 		this.showHitboxes = false; // Set to true to show collision hitboxes
 		this.timer = new GameTimer();
 		this.fromRestart = false;
+		this.autoStart = autoStart; // Control whether to auto-start timer when images load
 
 		this.canvas = document.getElementById("gameCanvas");
 		this.ctx = this.canvas.getContext("2d");
@@ -78,7 +79,7 @@ class PenguinGlider {
 		// Final level iceberg
 		this.finalIcebergGenerated = false; // Track if final iceberg has been created
 		this.finalIcebergPosition = this.levelLength - 200; // Position final iceberg near the end
-		this.preFinalIcebergGenerated = true; // Track if the iceberg before final has been created
+		this.preFinalIcebergGenerated = false; // Track if the iceberg before final has been created
 
 		// Fish distribution tracking
 		this.fishSpawned = 0; // Total fish spawned so far
@@ -161,8 +162,8 @@ class PenguinGlider {
 					this.init(); // Start the game once all images are loaded
 					// Set up timer to end game when time runs out
 					this.timer.setTimeUpCallback(() => this.gameOver());
-					// Initial timer start
-					if (!this.fromRestart) {
+					// Initial timer start - only if autoStart is enabled and not from restart
+					if (this.autoStart && !this.fromRestart) {
 						this.timer.start();
 					}
 				}
@@ -173,6 +174,11 @@ class PenguinGlider {
 				if (this.imagesLoaded === this.totalImages) {
 					this.imagesReady = true;
 					this.init(); // Start the game even if some images failed
+					// Set up timer but don't auto-start if autoStart is disabled
+					this.timer.setTimeUpCallback(() => this.gameOver());
+					if (this.autoStart && !this.fromRestart) {
+						this.timer.start();
+					}
 				}
 			};
 			img.src = `img/${imageName}`;

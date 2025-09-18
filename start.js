@@ -29,6 +29,45 @@ window.addEventListener("DOMContentLoaded", function () {
 	logo.style.filter = "drop-shadow(0 0 32px #b3e0ff) drop-shadow(0 0 8px #4a90e2)";
 	document.body.appendChild(logo);
 
+	// Create a temporary game instance to load images and check when they're ready
+	var tempGame = null;
+	var logoAnimationTriggered = false;
+	var logoStartTime = Date.now(); // Track when logo first appears
+	var minimumLogoDisplayTime = 5000; // 5 seconds minimum display time
+
+	// Start image loading immediately when DOM is loaded
+	function initImageLoading() {
+		// Only create game instance if not already created
+		if (!tempGame) {
+			tempGame = new PenguinGlider(false); // Create game instance with autoStart disabled
+		}
+
+		// Poll for when images are ready AND minimum time has passed
+		function checkImagesReady() {
+			var timeElapsed = Date.now() - logoStartTime;
+			var minimumTimePassed = timeElapsed >= minimumLogoDisplayTime;
+
+			if (tempGame && tempGame.imagesReady && minimumTimePassed && !logoAnimationTriggered) {
+				logoAnimationTriggered = true;
+				shrinkLogoToTopAndShowIntro();
+			} else if (!logoAnimationTriggered) {
+				setTimeout(checkImagesReady, 100); // Check every 100ms
+			}
+		}
+
+		checkImagesReady();
+	}
+
+	// Initialize image loading when the logo loads or immediately if it's already loaded
+	logo.onload = function () {
+		initImageLoading();
+	};
+
+	// Also try to initialize immediately in case the logo loads very fast
+	if (logo.complete) {
+		initImageLoading();
+	}
+
 	// Optional: Add a text title overlay for more elegant font (if you want text on top of the image)
 	/*
     var title = document.createElement('div');
@@ -127,23 +166,28 @@ window.addEventListener("DOMContentLoaded", function () {
 				text.remove();
 				playBtn.remove();
 
-				// Call the startGame function from index.html which properly initializes everything
-				if (typeof startGame === "function") {
-					startGame();
+				// Use the existing game instance and start it properly
+				if (tempGame && tempGame.imagesReady) {
+					// Set the global game variable for restart functionality
+					window.game = tempGame;
+					tempGame.fromRestart = false; // Ensure it's treated as a fresh start
+					tempGame.timer.start(); // Start the timer
+					// Hide start screen and begin gameplay
+					const startScreen = document.getElementById("startScreen");
+					if (startScreen) {
+						startScreen.style.display = "none";
+					}
+				} else {
+					// Fallback: call the original startGame function
+					if (typeof startGame === "function") {
+						startGame();
+					}
 				}
 			});
 			document.body.appendChild(playBtn);
 		}, 700);
 	}
 
-	// Listen for click/touch/scroll to trigger logo shrink/move and show intro
-	function triggerLogoMoveOnce() {
-		shrinkLogoToTopAndShowIntro();
-		window.removeEventListener("scroll", triggerLogoMoveOnce);
-		window.removeEventListener("touchstart", triggerLogoMoveOnce);
-		logo.removeEventListener("click", triggerLogoMoveOnce);
-	}
-	logo.addEventListener("click", triggerLogoMoveOnce);
-	window.addEventListener("scroll", triggerLogoMoveOnce, { once: true });
-	window.addEventListener("touchstart", triggerLogoMoveOnce, { once: true });
+	// Remove the manual trigger events since we now auto-trigger when images load
+	// The logo will automatically animate when images are ready
 });
