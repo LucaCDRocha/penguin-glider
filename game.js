@@ -2,15 +2,17 @@
 class PenguinGlider {
 	constructor() {
 		// Debug settings
-		this.showHitboxes = true; // Set to true to show collision hitboxes
+		this.showHitboxes = false; // Set to true to show collision hitboxes
 		this.timer = new GameTimer();
 		this.fromRestart = false;
 
 		this.canvas = document.getElementById("gameCanvas");
 		this.ctx = this.canvas.getContext("2d");
 		this.gameOverElement = document.getElementById("gameOver");
+		this.winScreenElement = document.getElementById("winScreen");
 		this.finalScoreElement = document.getElementById("finalScore");
-		this.createScoreDisplay();
+		this.winScoreElement = document.getElementById("winScore");
+		this.winTimeElement = document.getElementById("winTime");
 
 		// Calculate mobile scale factor based on screen size
 		this.isMobile = window.innerWidth < 768 || window.innerHeight < 500;
@@ -63,6 +65,24 @@ class PenguinGlider {
 			targetY: 0,
 			smoothing: 0.1,
 		};
+
+		// Level progression system
+		this.levelLength = 20000; // Total distance to complete the level (in pixels)
+		this.startPosition = 0; // Starting camera position
+		this.distanceTraveled = 0; // How far the player has progressed
+		this.levelProgress = 0; // Percentage of level completed (0-1)
+		this.levelCompleted = false; // Whether the level has been completed
+		this.minFishRequired = 10; // Minimum fish needed to win
+		this.progressBarElement = null; // UI element for progress bar
+
+		// Fish distribution tracking
+		this.fishSpawned = 0; // Total fish spawned so far
+		this.guaranteedFishRegions = []; // Track regions that must have fish
+		this.lastGuaranteedFishX = 0; // Last position where guaranteed fish was placed
+
+		// Create UI elements after properties are defined
+		this.createScoreDisplay();
+		this.createProgressBar();
 
 		// Delta time for frame rate independence
 		this.lastTime = 0;
@@ -358,6 +378,20 @@ class PenguinGlider {
 				gainNode.gain.exponentialRampToValueAtTime(0.01, this.audioContext.currentTime + 0.2);
 				oscillator.start();
 				oscillator.stop(this.audioContext.currentTime + 0.2);
+				break;
+
+			case "win":
+				// Victory sound - ascending triumphant melody
+				oscillator.type = "sine";
+				oscillator.frequency.setValueAtTime(523, this.audioContext.currentTime); // C5
+				oscillator.frequency.setValueAtTime(659, this.audioContext.currentTime + 0.15); // E5
+				oscillator.frequency.setValueAtTime(784, this.audioContext.currentTime + 0.3); // G5
+				oscillator.frequency.setValueAtTime(1047, this.audioContext.currentTime + 0.45); // C6
+				gainNode.gain.setValueAtTime(0.2, this.audioContext.currentTime);
+				gainNode.gain.setValueAtTime(0.25, this.audioContext.currentTime + 0.45);
+				gainNode.gain.exponentialRampToValueAtTime(0.01, this.audioContext.currentTime + 0.8);
+				oscillator.start();
+				oscillator.stop(this.audioContext.currentTime + 0.8);
 				break;
 		}
 	}
@@ -669,10 +703,8 @@ class PenguinGlider {
 
 		this.icebergs.push(iceberg);
 
-		// 30% chance to spawn a fish on top of this iceberg
-		if (Math.random() < 0.3) {
-			this.spawnFishOnIceberg(iceberg);
-		}
+		// Intelligent fish spawning to ensure minimum availability
+		this.smartFishSpawning(iceberg);
 
 		return newIcebergY;
 	}
@@ -870,6 +902,25 @@ class PenguinGlider {
 
 		// Prevent camera from going below water level
 		this.camera.y = Math.min(this.camera.y, this.waterLevel - this.canvas.height + waterBufferHeight);
+
+		// Update level progression
+		this.updateLevelProgress();
+	}
+
+	updateLevelProgress() {
+		// Calculate distance traveled based on camera position from start
+		this.distanceTraveled = Math.max(0, this.camera.x - this.startPosition);
+
+		// Calculate progress percentage (0-1)
+		this.levelProgress = Math.min(1, this.distanceTraveled / this.levelLength);
+
+		// Update progress bar display
+		this.updateProgressBar();
+
+		// Check if level is completed
+		if (!this.levelCompleted && this.levelProgress >= 1) {
+			this.checkLevelCompletion();
+		}
 	}
 
 	updateIcebergs(deltaMultiplier = 1) {
@@ -915,6 +966,41 @@ class PenguinGlider {
 			imageType: Math.floor(Math.random() * 4) + 1,
 		};
 		this.fish.push(fish);
+		this.fishSpawned++;
+	}
+
+	smartFishSpawning(iceberg) {
+		// Calculate how many fish we should have spawned by this point
+		const distanceFromStart = iceberg.x - this.startPosition;
+		const progressThroughLevel = Math.min(distanceFromStart / this.levelLength, 1);
+		const expectedFishByNow = Math.floor(progressThroughLevel * (this.minFishRequired + 5)); // +5 buffer for safety
+
+		// Check if we need guaranteed fish
+		const regionSize = this.levelLength / (this.minFishRequired + 3); // Divide level into regions
+		const currentRegion = Math.floor(distanceFromStart / regionSize);
+		const shouldGuaranteeFish =
+			this.fishSpawned < expectedFishByNow || distanceFromStart - this.lastGuaranteedFishX > regionSize * 1.5;
+
+		// Spawn fish with intelligent probability
+		let spawnChance = 0.3; // Base 30% chance
+
+		if (shouldGuaranteeFish) {
+			spawnChance = 0.8; // 80% chance when we need more fish
+		} else if (this.fishSpawned >= this.minFishRequired + 8) {
+			spawnChance = 0.15; // Reduce spawn rate if we have plenty
+		}
+
+		// Force spawn if we're critically behind
+		if (this.fishSpawned < Math.floor(progressThroughLevel * this.minFishRequired * 0.7)) {
+			spawnChance = 1.0; // Guarantee spawn
+		}
+
+		if (Math.random() < spawnChance) {
+			this.spawnFishOnIceberg(iceberg);
+			if (shouldGuaranteeFish) {
+				this.lastGuaranteedFishX = iceberg.x;
+			}
+		}
 	}
 
 	updateParticles(deltaMultiplier = 1) {
@@ -1290,7 +1376,7 @@ class PenguinGlider {
 
 		// Create message below
 		this.scoreMessage = document.createElement("div");
-		this.scoreMessage.textContent = "collect at least 10!";
+		this.scoreMessage.textContent = `collect at least ${this.minFishRequired}!`;
 		this.scoreMessage.style.color = "#000000";
 		this.scoreMessage.style.fontSize = "clamp(16px, 3vw, 24px)";
 		this.scoreMessage.style.fontWeight = "400";
@@ -1307,7 +1393,109 @@ class PenguinGlider {
 
 	updateScoreDisplay() {
 		this.scoreText.textContent = `x ${this.score}`;
-		this.scoreMessage.style.color = this.score >= 10 ? "#00ff00" : "#bc0000ff";
+		this.scoreMessage.style.color = this.score >= this.minFishRequired ? "#00ff00" : "#bc0000ff";
+	}
+
+	updateFishRequirement() {
+		// Update the fish requirement message to reflect current minFishRequired
+		if (this.scoreMessage) {
+			this.scoreMessage.textContent = `collect at least ${this.minFishRequired}!`;
+		}
+		// Also update the score display color
+		this.updateScoreDisplay();
+	}
+
+	createProgressBar() {
+		// Create container for progress bar
+		this.progressBarContainer = document.createElement("div");
+		this.progressBarContainer.style.position = "fixed";
+		this.progressBarContainer.style.top = "max(20px, env(safe-area-inset-top, 20px))";
+		this.progressBarContainer.style.left = "50%";
+		this.progressBarContainer.style.transform = "translateX(-50%)";
+		this.progressBarContainer.style.width = "300px";
+		this.progressBarContainer.style.maxWidth = "60vw";
+		this.progressBarContainer.style.zIndex = "10";
+
+		// Create progress bar background
+		this.progressBarBg = document.createElement("div");
+		this.progressBarBg.style.width = "100%";
+		this.progressBarBg.style.height = "20px";
+		this.progressBarBg.style.backgroundColor = "rgba(255, 255, 255, 0.3)";
+		this.progressBarBg.style.borderRadius = "10px";
+		this.progressBarBg.style.border = "2px solid #000000";
+		this.progressBarBg.style.overflow = "hidden";
+
+		// Create progress bar fill
+		this.progressBarFill = document.createElement("div");
+		this.progressBarFill.style.width = "0%";
+		this.progressBarFill.style.height = "100%";
+		this.progressBarFill.style.backgroundColor = "#4a90e2";
+		this.progressBarFill.style.borderRadius = "8px";
+		this.progressBarFill.style.transition = "width 0.3s ease";
+
+		// Create progress text
+		this.progressText = document.createElement("div");
+		this.progressText.style.textAlign = "center";
+		this.progressText.style.fontSize = "clamp(12px, 2.5vw, 16px)";
+		this.progressText.style.fontWeight = "bold";
+		this.progressText.style.color = "#000000";
+		this.progressText.style.marginTop = "4px";
+		this.progressText.textContent = "Level Progress: 0%";
+
+		// Assemble the elements
+		this.progressBarBg.appendChild(this.progressBarFill);
+		this.progressBarContainer.appendChild(this.progressBarBg);
+		this.progressBarContainer.appendChild(this.progressText);
+		document.body.appendChild(this.progressBarContainer);
+	}
+
+	updateProgressBar() {
+		if (this.progressBarFill && this.progressText) {
+			const progressPercent = Math.round(this.levelProgress * 100);
+			this.progressBarFill.style.width = `${progressPercent}%`;
+			this.progressText.textContent = `Level Progress: ${progressPercent}%`;
+
+			// Change color as we get closer to the end
+			if (progressPercent >= 90) {
+				this.progressBarFill.style.backgroundColor = "#00ff00"; // Green when almost done
+			} else if (progressPercent >= 70) {
+				this.progressBarFill.style.backgroundColor = "#ffaa00"; // Orange when getting close
+			} else {
+				this.progressBarFill.style.backgroundColor = "#4a90e2"; // Blue for most of the journey
+			}
+		}
+	}
+
+	checkLevelCompletion() {
+		this.levelCompleted = true;
+
+		// Check win conditions: enough fish and time remaining
+		const hasEnoughFish = this.score >= this.minFishRequired;
+		const hasTimeLeft = this.timer.remainingTime > 0;
+
+		if (hasEnoughFish && hasTimeLeft) {
+			this.levelWin();
+		} else {
+			this.gameOver(); // Failed to meet win conditions
+		}
+	}
+
+	levelWin() {
+		this.gameState = "won";
+		this.timer.stop();
+		this.timer.hide();
+		this.scoreContainer.style.display = "none";
+		this.progressBarContainer.style.display = "none";
+		this.showWinScreen();
+		this.playSound("win");
+	}
+
+	showWinScreen() {
+		if (this.winScreenElement && this.winScoreElement && this.winTimeElement) {
+			this.winScoreElement.textContent = this.score;
+			this.winTimeElement.textContent = this.timer.formatTime(Math.ceil(this.timer.remainingTime));
+			this.winScreenElement.style.display = "block";
+		}
 	}
 
 	restart() {
@@ -1335,12 +1523,26 @@ class PenguinGlider {
 		this.camera.targetX = 0;
 		this.camera.targetY = 0;
 
+		// Reset level progression
+		this.startPosition = 0;
+		this.distanceTraveled = 0;
+		this.levelProgress = 0;
+		this.levelCompleted = false;
+		this.updateProgressBar();
+
+		// Reset fish tracking
+		this.fishSpawned = 0;
+		this.guaranteedFishRegions = [];
+		this.lastGuaranteedFishX = 0;
+
 		this.generateInitialIcebergs();
 		this.positionPenguinOnFirstIceberg(); // Position penguin on first iceberg after restart
 		this.generateSnowflakes(); // Regenerate snowflakes for new camera position
 		this.gameOverElement.style.display = "none";
+		this.winScreenElement.style.display = "none";
 		this.updateScoreDisplay();
 		this.scoreContainer.style.display = "block";
+		this.progressBarContainer.style.display = "block";
 	}
 
 	render() {
@@ -1864,6 +2066,34 @@ class PenguinGlider {
 		this.ctx.fillStyle = "blue";
 		this.ctx.font = "16px Arial";
 		this.ctx.fillText("Water Level", this.camera.x + 10, this.waterLevel - 10);
+		this.ctx.restore();
+
+		// Draw fish distribution debug info
+		this.ctx.save();
+		this.ctx.fillStyle = "white";
+		this.ctx.strokeStyle = "black";
+		this.ctx.lineWidth = 1;
+		this.ctx.font = "14px Arial";
+
+		const debugX = this.camera.x + 10;
+		const debugY = this.camera.y + 50;
+		const lineHeight = 20;
+		let lineIndex = 0;
+
+		// Background for text
+		this.ctx.fillStyle = "rgba(0, 0, 0, 0.7)";
+		this.ctx.fillRect(debugX - 5, debugY - 5, 300, lineHeight * 5 + 10);
+
+		this.ctx.fillStyle = "white";
+		this.ctx.fillText(`Fish Spawned: ${this.fishSpawned}`, debugX, debugY + lineHeight * lineIndex++);
+		this.ctx.fillText(`Fish Required: ${this.minFishRequired}`, debugX, debugY + lineHeight * lineIndex++);
+		this.ctx.fillText(`Fish Available: ${this.fish.length}`, debugX, debugY + lineHeight * lineIndex++);
+
+		const progressPercent = Math.round(this.levelProgress * 100);
+		const expectedFish = Math.floor(this.levelProgress * (this.minFishRequired + 5));
+		this.ctx.fillText(`Level Progress: ${progressPercent}%`, debugX, debugY + lineHeight * lineIndex++);
+		this.ctx.fillText(`Expected Fish: ${expectedFish}`, debugX, debugY + lineHeight * lineIndex++);
+
 		this.ctx.restore();
 	}
 

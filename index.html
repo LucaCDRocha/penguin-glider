@@ -352,14 +352,11 @@
 	</head>
 	<body>
 		<!-- Start Screen -->
-		<div class="start-screen" id="startScreen">
-
-		</div>
+		<div class="start-screen" id="startScreen"></div>
 
 		<canvas id="gameCanvas"></canvas>
 
 		<!-- UI Overlay -->
-		
 
 		<!-- Mobile Touch Controls -->
 		<div class="mobile-controls" id="mobileControls">
@@ -372,6 +369,15 @@
 		<div class="game-over" id="gameOver">
 			<img src="img/try-again.png" onclick="restartGame()" alt="Try Again">
 			<br><br><p> OOOOPS you fell in the icy water!</p>
+		</div>
+
+		<!-- Win Screen Modal -->
+		<div class="game-over" id="winScreen">
+			<h2>🎉 Level Complete! 🎉</h2>
+			<p>You successfully reached the end with enough fish! 🐟</p>
+			<p>Final Score: <span id="winScore">0</span> fish</p>
+			<p>Time Remaining: <span id="winTime">0:00</span></p>
+			<button class="restart-btn" onclick="restartGame()">Play Again</button>
 		</div>
 
 		<script src="game.js"></script>
@@ -392,7 +398,9 @@
 			// Restart game directly without showing start screen
 			function restartGame() {
 				const gameOver = document.getElementById("gameOver");
+				const winScreen = document.getElementById("winScreen");
 				gameOver.style.display = "none";
+				winScreen.style.display = "none";
 
 				if (game) {
 					game.restart();
