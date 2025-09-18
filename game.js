@@ -2,13 +2,15 @@
 class PenguinGlider {
 	constructor() {
 		// Debug settings
-		this.showHitboxes = false; // Set to true to show collision hitboxes
+		this.showHitboxes = true; // Set to true to show collision hitboxes
+		this.timer = new GameTimer();
+		this.fromRestart = false;
 
 		this.canvas = document.getElementById("gameCanvas");
 		this.ctx = this.canvas.getContext("2d");
-		this.scoreElement = document.getElementById("score");
 		this.gameOverElement = document.getElementById("gameOver");
 		this.finalScoreElement = document.getElementById("finalScore");
+		this.createScoreDisplay();
 
 		// Calculate mobile scale factor based on screen size
 		this.isMobile = window.innerWidth < 768 || window.innerHeight < 500;
@@ -127,6 +129,12 @@ class PenguinGlider {
 				if (this.imagesLoaded === this.totalImages) {
 					this.imagesReady = true;
 					this.init(); // Start the game once all images are loaded
+					// Set up timer to end game when time runs out
+					this.timer.setTimeUpCallback(() => this.gameOver());
+					// Initial timer start
+					if (!this.fromRestart) {
+						this.timer.start();
+					}
 				}
 			};
 			img.onerror = () => {
@@ -1071,8 +1079,8 @@ class PenguinGlider {
 			) {
 				// Fish collected!
 				fish.collected = true;
-				this.score += 10;
-				this.scoreElement.textContent = this.score;
+				this.score += 1;
+				this.updateScoreDisplay();
 
 				// Create collection particles
 				this.createFishCollectionParticles(fish.x + fish.width / 2, fish.y + fish.height / 2);
@@ -1137,11 +1145,69 @@ class PenguinGlider {
 		this.finalScoreElement.textContent = this.score;
 		this.gameOverElement.style.display = "block";
 		this.playSound("gameOver");
+		this.timer.stop();
+		this.timer.hide();
+		this.scoreContainer.style.display = "none";
+	}
+
+	createScoreDisplay() {
+		// Create container for score display
+		this.scoreContainer = document.createElement('div');
+		this.scoreContainer.style.position = 'fixed';
+		this.scoreContainer.style.top = 'max(20px, env(safe-area-inset-top, 20px))';
+		this.scoreContainer.style.right = '20px';
+		this.scoreContainer.style.fontFamily = "'Digital-7', 'LCD', monospace";
+		this.scoreContainer.style.zIndex = '10';
+
+		// Create score display with fish icon
+		this.scoreElement = document.createElement('div');
+		this.scoreElement.style.display = 'flex';
+		this.scoreElement.style.alignItems = 'center';
+		this.scoreElement.style.justifyContent = 'flex-end';
+		this.scoreElement.style.color = '#000000';
+		this.scoreElement.style.fontSize = 'clamp(36px, 6vw, 48px)';
+		this.scoreElement.style.fontWeight = '400';
+		this.scoreElement.style.letterSpacing = '2px';
+
+		// Create fish icon
+		this.fishIcon = document.createElement('img');
+		this.fishIcon.src = 'img/fish4.png';
+		this.fishIcon.style.height = 'clamp(24px, 4vw, 32px)';
+		this.fishIcon.style.marginRight = '8px';
+
+		// Create score text
+		this.scoreText = document.createElement('span');
+		this.scoreText.textContent = 'x 0';
+
+		// Create message below
+		this.scoreMessage = document.createElement('div');
+		this.scoreMessage.textContent = 'collect at least 10!';
+		this.scoreMessage.style.color = '#000000';
+		this.scoreMessage.style.fontSize = 'clamp(16px, 3vw, 24px)';
+		this.scoreMessage.style.fontWeight = '400';
+		this.scoreMessage.style.textAlign = 'right';
+		this.scoreMessage.style.marginTop = '4px';
+
+		// Assemble the elements
+		this.scoreElement.appendChild(this.fishIcon);
+		this.scoreElement.appendChild(this.scoreText);
+		this.scoreContainer.appendChild(this.scoreElement);
+		this.scoreContainer.appendChild(this.scoreMessage);
+		document.body.appendChild(this.scoreContainer);
+	}
+
+	updateScoreDisplay() {
+		this.scoreText.textContent = `x ${this.score}`;
+		this.scoreMessage.style.color = this.score >= 10 ? '#00ff00' : '#bc0000ff';
 	}
 
 	restart() {
 		this.gameState = "playing";
 		this.score = 0;
+		this.fromRestart = true;
+		this.timer.reset();
+		this.timer.show();
+		this.timer.start();
 		this.penguin.x = 100;
 		this.penguin.y = 300;
 		this.penguin.velocityX = 0;
@@ -1164,7 +1230,8 @@ class PenguinGlider {
 		this.positionPenguinOnFirstIceberg(); // Position penguin on first iceberg after restart
 		this.generateSnowflakes(); // Regenerate snowflakes for new camera position
 		this.gameOverElement.style.display = "none";
-		this.scoreElement.textContent = this.score;
+		this.updateScoreDisplay();
+		this.scoreContainer.style.display = "block";
 	}
 
 	render() {
