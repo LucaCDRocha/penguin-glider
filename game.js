@@ -1927,14 +1927,6 @@ class PenguinGlider {
 		// Draw penguin
 		this.drawPenguin();
 
-		// Draw final iceberg in foreground (on top of everything else)
-		for (let iceberg of this.icebergs) {
-			if (iceberg.isFinalIceberg && this.imagesReady && this.images["end-level"]) {
-				// Draw the special end-level image in foreground
-				this.ctx.drawImage(this.images["end-level"], iceberg.x, iceberg.y, iceberg.width, iceberg.height);
-			}
-		}
-
 		// Draw infinite water in foreground, tiled from waterLevel down to bottom of canvas
 		if (this.imagesReady && this.images.water) {
 			this.ctx.globalAlpha = 0.4;
@@ -2054,6 +2046,14 @@ class PenguinGlider {
 				}
 			}
 			this.ctx.stroke();
+		}
+
+		// Draw final iceberg in foreground (on top of everything else including water)
+		for (let iceberg of this.icebergs) {
+			if (iceberg.isFinalIceberg && this.imagesReady && this.images["end-level"]) {
+				// Draw the special end-level image in foreground
+				this.ctx.drawImage(this.images["end-level"], iceberg.x, iceberg.y, iceberg.width, iceberg.height);
+			}
 		}
 
 		// Draw all hitboxes for debugging (if enabled)
