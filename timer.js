@@ -1,5 +1,5 @@
 class GameTimer {
-    constructor(duration = 180) { // 3 minutes in seconds
+    constructor(duration = 40) { // 3 minutes in seconds
         this.totalDuration = duration;
         this.remainingTime = duration;
         this.isRunning = false;

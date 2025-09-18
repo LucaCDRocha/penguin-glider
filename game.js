@@ -1525,7 +1525,7 @@ class PenguinGlider {
 	updateFishRequirement() {
 		// Update the fish requirement message to reflect current minFishRequired
 		if (this.scoreMessage) {
-			this.scoreMessage.textContent = `collect at least ${this.minFishRequired}!`;
+			this.scoreMessage.textContent = `collect at least ${this.minFishRequired}`;
 		}
 		// Also update the score display color
 		this.updateScoreDisplay();
@@ -1586,8 +1586,8 @@ class PenguinGlider {
 		// Create penguin-baby icon (positioned at end)
 		this.progressBabyIcon = document.createElement("img");
 		this.progressBabyIcon.src = "img/penguin-baby.png";
-		this.progressBabyIcon.style.width = "35px";
-		this.progressBabyIcon.style.height = "35px";
+		this.progressBabyIcon.style.width = "40px";
+		this.progressBabyIcon.style.height = "40px";
 		this.progressBabyIcon.style.objectFit = "contain";
 		this.progressBabyIcon.style.flexShrink = "0";
 

@@ -195,26 +195,24 @@
 			/* Mobile Controls */
 			.mobile-controls {
 				position: fixed;
-				bottom: max(20px, env(safe-area-inset-bottom, 20px));
-				left: 50%;
-				transform: translateX(-50%);
+				bottom: 0;
+				left: 0;
+				width: 100vw;
 				display: none;
 				flex-direction: row;
-				justify-content: center;
+				justify-content: space-between;
 				align-items: center;
-				width: min(95vw, 400px);
-				padding: clamp(8px, 2vw, 15px);
+				padding: max(20px, env(safe-area-inset-bottom, 20px)) 20px;
 				z-index: 15;
 				pointer-events: none;
-				gap: clamp(4px, 1vw, 8px);
 			}
 
 			.control-button {
 				background: transparent;
 				border: none;
-				padding: clamp(4px, 1vw, 8px);
-				width: clamp(50px, 15vw, 80px);
-				height: clamp(50px, 15vw, 80px);
+				padding: 0;
+				width: clamp(60px, 20vw, 100px);
+				height: clamp(60px, 20vw, 100px);
 				display: flex;
 				align-items: center;
 				justify-content: center;
@@ -240,9 +238,9 @@
 
 			.jump-button {
 				flex: 0 0 auto;
-				margin: 0 clamp(8px, 2vw, 15px);
-				width: clamp(70px, 20vw, 120px);
-				height: clamp(70px, 20vw, 120px);
+				margin: 0;
+				width: clamp(90px, 30vw, 160px);
+				height: clamp(90px, 30vw, 160px);
 			}
 
 			.jump-button:active {
@@ -300,22 +298,22 @@
 				}
 
 				.mobile-controls {
-					bottom: 20px;
+					bottom: 10px;
 					padding: 10px;
-					gap: 8px;
+					gap: 0;
 				}
 
 				.control-button {
 					min-width: clamp(50px, 12vw, 60px);
 					min-height: clamp(50px, 12vw, 60px);
 					font-size: clamp(16px, 3.5vw, 18px);
-					padding: clamp(10px, 3vw, 15px);
+					padding: 0;
 				}
 
 				.jump-button {
 					min-height: clamp(60px, 15vw, 70px);
 					font-size: clamp(16px, 3.5vw, 20px);
-					margin: 0 8px;
+					margin: 0;
 				}
 			}
 
@@ -333,8 +331,8 @@
 				}
 
 				.mobile-controls {
-					bottom: 10px;
-					padding: 5px;
+					bottom: 5px;
+					padding: 5px 15px;
 				}
 
 				.control-button {
@@ -420,5 +418,7 @@
 		</script>
 		<script src="timer.js"></script>
 		<script src="start.js"></script>
+	</body>
+</html>
 	</body>
 </html>
