@@ -105,19 +105,32 @@
 				top: 50%;
 				left: 50%;
 				transform: translate(-50%, -50%);
-				background: rgba(0, 0, 0, 0.9);
-				color: white;
-				padding: clamp(30px, 8vw, 40px);
-				border-radius: 20px;
 				text-align: center;
 				display: none;
-				z-index: 20;
-				backdrop-filter: blur(15px);
-				border: 2px solid rgba(255, 255, 255, 0.1);
-				box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+				z-index: 999;
 				pointer-events: auto;
-				max-width: 90vw;
-				max-height: 90vh;
+			}
+
+			.game-over img {
+				width: clamp(300px, 40vw, 500px);
+				height: auto;
+				cursor: pointer;
+				transition: transform 0.2s;
+				filter: drop-shadow(0 0 20px rgba(255, 255, 255, 0.5));
+			}
+
+			.game-over img:hover {
+				transform: scale(1.1);
+			}
+
+			.game-over p {
+				font-family: 'Digital-7', 'LCD', monospace;
+				color: #000000;
+				font-size: clamp(16px, 4vw, 24px); /* smaller & adaptable */
+				font-weight: 200;
+				text-align: center;
+				letter-spacing: 2px;
+				margin-top: 30px;
 			}
 
 			/* Start Screen */
@@ -177,93 +190,63 @@
 				box-shadow: 0 8px 25px rgba(74, 144, 226, 0.6);
 			}
 
-			.game-over h2 {
-				font-size: clamp(24px, 6vw, 32px);
-				margin-bottom: 15px;
-			}
 
-			.game-over p {
-				font-size: clamp(16px, 4vw, 18px);
-				margin-bottom: 10px;
-			}
-
-			.restart-btn {
-				background: #4a90e2;
-				color: white;
-				border: none;
-				padding: clamp(12px, 3vw, 15px) clamp(25px, 6vw, 30px);
-				border-radius: 10px;
-				cursor: pointer;
-				font-size: clamp(16px, 4vw, 18px);
-				margin-top: 20px;
-				transition: all 0.3s;
-				pointer-events: auto;
-				touch-action: manipulation;
-			}
-
-			.restart-btn:hover,
-			.restart-btn:active {
-				background: #357abd;
-				transform: scale(1.05);
-			}
 
 			/* Mobile Controls */
 			.mobile-controls {
 				position: fixed;
-				bottom: max(30px, env(safe-area-inset-bottom, 30px));
+				bottom: max(20px, env(safe-area-inset-bottom, 20px));
 				left: 50%;
 				transform: translateX(-50%);
 				display: none;
 				flex-direction: row;
-				justify-content: space-between;
+				justify-content: center;
 				align-items: center;
-				width: min(90vw, 500px);
-				padding: clamp(15px, 4vw, 20px);
+				width: min(95vw, 400px);
+				padding: clamp(8px, 2vw, 15px);
 				z-index: 15;
 				pointer-events: none;
-				gap: 10px;
+				gap: clamp(4px, 1vw, 8px);
 			}
 
 			.control-button {
-				background: rgba(74, 144, 226, 0.9);
-				border: 2px solid #4a90e2;
-				border-radius: 15px;
-				color: white;
-				font-size: clamp(18px, 4vw, 20px);
-				font-weight: bold;
-				padding: clamp(15px, 4vw, 20px);
-				min-width: clamp(60px, 15vw, 70px);
-				min-height: clamp(60px, 15vw, 70px);
+				background: transparent;
+				border: none;
+				padding: clamp(4px, 1vw, 8px);
+				width: clamp(50px, 15vw, 80px);
+				height: clamp(50px, 15vw, 80px);
 				display: flex;
 				align-items: center;
 				justify-content: center;
 				touch-action: manipulation;
 				user-select: none;
-				backdrop-filter: blur(15px);
-				box-shadow: 0 6px 20px rgba(0, 0, 0, 0.4);
 				transition: all 0.1s;
 				pointer-events: auto;
 				flex-shrink: 0;
+				filter: drop-shadow(0 6px 20px rgba(0, 0, 0, 0.4));
+			}
+
+			.control-button img {
+				width: 100%;
+				height: 100%;
+				object-fit: contain;
+				pointer-events: none;
 			}
 
 			.control-button:active {
-				background: rgba(53, 122, 189, 0.9);
 				transform: scale(0.95);
-				box-shadow: 0 3px 10px rgba(0, 0, 0, 0.5);
+				filter: drop-shadow(0 3px 10px rgba(0, 0, 0, 0.5));
 			}
 
 			.jump-button {
-				background: rgba(255, 140, 0, 0.9);
-				border-color: #ff8c00;
-				flex: 1;
-				margin: 0 15px;
-				min-height: clamp(70px, 18vw, 80px);
-				font-size: clamp(18px, 4vw, 22px);
-				max-width: 200px;
+				flex: 0 0 auto;
+				margin: 0 clamp(8px, 2vw, 15px);
+				width: clamp(70px, 20vw, 120px);
+				height: clamp(70px, 20vw, 120px);
 			}
 
 			.jump-button:active {
-				background: rgba(255, 140, 0, 1);
+				transform: scale(0.95);
 			}
 
 			/* Show mobile controls on touch devices */
@@ -380,17 +363,15 @@
 
 		<!-- Mobile Touch Controls -->
 		<div class="mobile-controls" id="mobileControls">
-			<button class="control-button" id="leftBtn">←</button>
-			<button class="control-button jump-button" id="jumpBtn">JUMP/GLIDE</button>
-			<button class="control-button" id="rightBtn">→</button>
+			<button class="control-button" id="leftBtn"><img src="img/left.png" alt="Left" style="width: 100%; height: 100%; object-fit: contain;"></button>
+			<button class="control-button jump-button" id="jumpBtn"><img src="img/jump.png" alt="Jump/Glide" style="width: 100%; height: 100%; object-fit: contain;"></button>
+			<button class="control-button" id="rightBtn"><img src="img/right.png" alt="Right" style="width: 100%; height: 100%; object-fit: contain;"></button>
 		</div>
 
-		<!-- Game Over Modal -->
+		<!-- Game Over Display -->
 		<div class="game-over" id="gameOver">
-			<h2>Game Over!</h2>
-			<p>The penguin fell into the icy water! ❄️</p>
-			<p>Final Score: <span id="finalScore">0</span></p>
-			<button class="restart-btn" onclick="restartGame()">Try Again</button>
+			<img src="img/try-again.png" onclick="restartGame()" alt="Try Again">
+			<br><br><p> OOOOPS you fell in the icy water!</p>
 		</div>
 
 		<script src="game.js"></script>

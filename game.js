@@ -117,6 +117,8 @@ class PenguinGlider {
 			"cloud3.png",
 			"cloud4.png",
 			"cloud5.png",
+			"snow1.png",
+			"try-again.png",
 		];
 
 		this.totalImages = imageList.length;
@@ -1205,8 +1207,52 @@ class PenguinGlider {
 
 	gameOver() {
 		this.gameState = "gameOver";
-		this.finalScoreElement.textContent = this.score;
 		this.gameOverElement.style.display = "block";
+		
+		// Create and position the try again button image
+		const tryAgainBtn = document.createElement('img');
+		tryAgainBtn.src = "img/try-again.png";
+		tryAgainBtn.style.position = "absolute";
+		tryAgainBtn.style.left = "50%";
+		tryAgainBtn.style.top = "50%";
+		tryAgainBtn.style.transform = "translate(-50%, -50%)";
+		tryAgainBtn.style.cursor = "pointer";
+
+		// Bigger and responsive
+		tryAgainBtn.style.width = "clamp(250px, 35vw, 400px)";
+		tryAgainBtn.style.height = "auto";
+
+		// Smooth hover effect
+		tryAgainBtn.style.transition = "transform 0.2s ease";
+
+		// Hover reaction: slightly enlarge
+		tryAgainBtn.addEventListener('mouseenter', () => {
+			tryAgainBtn.style.transform = "translate(-50%, -50%) scale(1.1)";
+		});
+		tryAgainBtn.addEventListener('mouseleave', () => {
+			tryAgainBtn.style.transform = "translate(-50%, -50%) scale(1)";
+		});
+
+		tryAgainBtn.onclick = restartGame;
+		
+		// Create loss reason text with timer font style
+		const lossReason = document.createElement('p');
+		lossReason.style.fontFamily = "'Share Tech Mono', monospace";
+		lossReason.style.position = "absolute";
+		lossReason.style.left = "50%";
+		lossReason.style.top = "calc(50% + 80px)";
+		lossReason.style.whiteSpace = "nowrap";
+		lossReason.style.transform = "translate(-50%, -50%)";
+		lossReason.style.fontSize = "clamp(14px, 3.5vw, 22px)";
+		lossReason.textContent = this.penguin.y > this.waterLevel ? "OOOOPS you fell in the icy water!" : "TIME'S UP!";
+		
+		// Clear any existing content
+		this.gameOverElement.innerHTML = '';
+		
+		// Add the new elements
+		this.gameOverElement.appendChild(lossReason);
+		this.gameOverElement.appendChild(tryAgainBtn);
+		
 		this.playSound("gameOver");
 		this.timer.stop();
 		this.timer.hide();
@@ -1411,7 +1457,6 @@ class PenguinGlider {
 		}
 
 		// Draw snowflakes
-		this.ctx.fillStyle = "rgba(255, 255, 255, 0.8)";
 		for (let snowflake of this.snowflakes) {
 			// Only draw snowflakes that are visible in camera view
 			if (
@@ -1420,9 +1465,14 @@ class PenguinGlider {
 				snowflake.y > this.camera.y - 50 &&
 				snowflake.y < this.camera.y + this.canvas.height + 50
 			) {
-				this.ctx.beginPath();
-				this.ctx.arc(snowflake.x, snowflake.y, snowflake.size, 0, Math.PI * 2);
-				this.ctx.fill();
+				// Draw snow image
+				// Draw snow image
+				const img = this.images['snow1']; // only snow1
+				if (this.imagesReady && img) {
+					const size = 60;
+					const offset = size / 2;
+					this.ctx.drawImage(img, snowflake.x - offset, snowflake.y - offset, size, size);
+				}
 			}
 		}
 
