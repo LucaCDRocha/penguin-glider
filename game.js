@@ -2,7 +2,7 @@
 class PenguinGlider {
 	constructor() {
 		// Debug settings
-		this.showHitboxes = false; // Set to true to show collision hitboxes
+		this.showHitboxes = true; // Set to true to show collision hitboxes
 		this.timer = new GameTimer();
 		this.fromRestart = false;
 
@@ -67,7 +67,7 @@ class PenguinGlider {
 		};
 
 		// Level progression system
-		this.levelLength = 5000; // Total distance to complete the level (in pixels)
+		this.levelLength = 2000; // Total distance to complete the level (in pixels)
 		this.startPosition = 0; // Starting camera position
 		this.distanceTraveled = 0; // How far the player has progressed
 		this.levelProgress = 0; // Percentage of level completed (0-1)
@@ -723,13 +723,13 @@ class PenguinGlider {
 			const endLevelImage = this.images["end-level"];
 
 			// Make the final iceberg smaller than normal icebergs
-			const scaleFactor = 0.5;
+			const scaleFactor = 0.4;
 			const width = endLevelImage.naturalWidth * scaleFactor;
 			const height = endLevelImage.naturalHeight * scaleFactor;
 
 			// Position the final iceberg so its left edge aligns with the end of the level
 			const finalIcebergX = this.levelLength;
-			const finalIcebergY = this.waterLevel - height + 20; // 20px above water level
+			const finalIcebergY = this.waterLevel - height - 150; // 20px above water level
 
 			// Create smaller collision box (only bottom part of the iceberg)
 			const colliderHeight = height * 0.6; // Collision box is 60% of image height
