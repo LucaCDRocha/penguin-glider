@@ -118,6 +118,8 @@ class PenguinGlider {
 	loadImages() {
 		const imageList = [
 			"penguin.png",
+			"penguin-baby.png",
+			"flag.png",
 			"iceberg1.png",
 			"iceberg2.png",
 			"iceberg3.png",
@@ -1366,18 +1368,22 @@ class PenguinGlider {
 		this.progressBarContainer.style.top = "max(20px, env(safe-area-inset-top, 20px))";
 		this.progressBarContainer.style.left = "50%";
 		this.progressBarContainer.style.transform = "translateX(-50%)";
-		this.progressBarContainer.style.width = "300px";
-		this.progressBarContainer.style.maxWidth = "60vw";
+		this.progressBarContainer.style.width = "380px";
+		this.progressBarContainer.style.maxWidth = "75vw";
 		this.progressBarContainer.style.zIndex = "10";
+		this.progressBarContainer.style.display = "flex";
+		this.progressBarContainer.style.alignItems = "center";
+		this.progressBarContainer.style.gap = "10px";
 
-		// Create progress bar background
-		this.progressBarBg = document.createElement("div");
-		this.progressBarBg.style.width = "100%";
-		this.progressBarBg.style.height = "20px";
-		this.progressBarBg.style.backgroundColor = "rgba(255, 255, 255, 0.3)";
-		this.progressBarBg.style.borderRadius = "10px";
-		this.progressBarBg.style.border = "2px solid #000000";
-		this.progressBarBg.style.overflow = "hidden";
+		// Create progress bar track container (takes most of the space)
+		this.progressBarTrack = document.createElement("div");
+		this.progressBarTrack.style.position = "relative";
+		this.progressBarTrack.style.width = "100%";
+		this.progressBarTrack.style.height = "20px";
+		this.progressBarTrack.style.backgroundColor = "rgba(255, 255, 255, 0.3)";
+		this.progressBarTrack.style.borderRadius = "10px";
+		this.progressBarTrack.style.border = "2px solid #000000";
+		this.progressBarTrack.style.overflow = "visible";
 
 		// Create progress bar fill
 		this.progressBarFill = document.createElement("div");
@@ -1387,27 +1393,71 @@ class PenguinGlider {
 		this.progressBarFill.style.borderRadius = "8px";
 		this.progressBarFill.style.transition = "width 0.3s ease";
 
+		// Create moving penguin indicator
+		this.progressPenguin = document.createElement("img");
+		this.progressPenguin.src = "img/penguin.png";
+		this.progressPenguin.style.position = "absolute";
+		this.progressPenguin.style.width = "28px";
+		this.progressPenguin.style.height = "28px";
+		this.progressPenguin.style.top = "-16px"; // Center on track
+		this.progressPenguin.style.left = "0%";
+		this.progressPenguin.style.transition = "left 0.3s ease";
+		this.progressPenguin.style.transform = "translateX(-50%)";
+		this.progressPenguin.style.zIndex = "2";
+		this.progressPenguin.style.objectFit = "contain";
+
+		// Create end container for baby penguin and flag
+		this.progressEndContainer = document.createElement("div");
+		this.progressEndContainer.style.display = "flex";
+		this.progressEndContainer.style.alignItems = "center";
+		this.progressEndContainer.style.gap = "0px";
+		this.progressEndContainer.style.flexShrink = "0";
+
+		// Create penguin-baby icon (positioned at end)
+		this.progressBabyIcon = document.createElement("img");
+		this.progressBabyIcon.src = "img/penguin-baby.png";
+		this.progressBabyIcon.style.width = "35px";
+		this.progressBabyIcon.style.height = "35px";
+		this.progressBabyIcon.style.objectFit = "contain";
+		this.progressBabyIcon.style.flexShrink = "0";
+
 		// Create progress text
 		this.progressText = document.createElement("div");
 		this.progressText.style.textAlign = "center";
-		this.progressText.style.fontSize = "clamp(12px, 2.5vw, 16px)";
+		this.progressText.style.fontSize = "clamp(10px, 2vw, 14px)";
 		this.progressText.style.fontWeight = "bold";
 		this.progressText.style.color = "#000000";
 		this.progressText.style.marginTop = "4px";
+		this.progressText.style.width = "100%";
 		this.progressText.textContent = "Level Progress: 0%";
 
-		// Assemble the elements
-		this.progressBarBg.appendChild(this.progressBarFill);
-		this.progressBarContainer.appendChild(this.progressBarBg);
-		this.progressBarContainer.appendChild(this.progressText);
-		document.body.appendChild(this.progressBarContainer);
+		// Assemble the track elements
+		this.progressBarTrack.appendChild(this.progressBarFill);
+		this.progressBarTrack.appendChild(this.progressPenguin);
+
+		// Assemble the end container
+		this.progressEndContainer.appendChild(this.progressBabyIcon);
+
+		// Assemble the main elements
+		this.progressBarContainer.appendChild(this.progressBarTrack);
+		this.progressBarContainer.appendChild(this.progressEndContainer);
+
+		// Create container for the whole progress system
+		this.progressSystemContainer = document.createElement("div");
+		this.progressSystemContainer.appendChild(this.progressBarContainer);
+		this.progressSystemContainer.appendChild(this.progressText);
+
+		document.body.appendChild(this.progressSystemContainer);
 	}
 
 	updateProgressBar() {
-		if (this.progressBarFill && this.progressText) {
+		if (this.progressBarFill && this.progressText && this.progressPenguin) {
 			const progressPercent = Math.round(this.levelProgress * 100);
 			this.progressBarFill.style.width = `${progressPercent}%`;
 			this.progressText.textContent = `Level Progress: ${progressPercent}%`;
+
+			// Move the penguin indicator
+			this.progressPenguin.style.left = `${progressPercent}%`;
 
 			// Change color as we get closer to the end
 			if (progressPercent >= 90) {
@@ -1439,7 +1489,7 @@ class PenguinGlider {
 		this.timer.stop();
 		this.timer.hide();
 		this.scoreContainer.style.display = "none";
-		this.progressBarContainer.style.display = "none";
+		this.progressSystemContainer.style.display = "none";
 		this.showWinScreen();
 		this.playSound("win");
 	}
@@ -1496,7 +1546,7 @@ class PenguinGlider {
 		this.winScreenElement.style.display = "none";
 		this.updateScoreDisplay();
 		this.scoreContainer.style.display = "block";
-		this.progressBarContainer.style.display = "block";
+		this.progressSystemContainer.style.display = "block";
 	}
 
 	render() {
