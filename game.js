@@ -2,15 +2,17 @@
 class PenguinGlider {
 	constructor() {
 		// Debug settings
-		this.showHitboxes = true; // Set to true to show collision hitboxes
+		this.showHitboxes = false; // Set to true to show collision hitboxes
 		this.timer = new GameTimer();
 		this.fromRestart = false;
 
 		this.canvas = document.getElementById("gameCanvas");
 		this.ctx = this.canvas.getContext("2d");
 		this.gameOverElement = document.getElementById("gameOver");
+		this.winScreenElement = document.getElementById("winScreen");
 		this.finalScoreElement = document.getElementById("finalScore");
-		this.createScoreDisplay();
+		this.winScoreElement = document.getElementById("winScore");
+		this.winTimeElement = document.getElementById("winTime");
 
 		// Calculate mobile scale factor based on screen size
 		this.isMobile = window.innerWidth < 768 || window.innerHeight < 500;
@@ -64,6 +66,29 @@ class PenguinGlider {
 			smoothing: 0.1,
 		};
 
+		// Level progression system
+		this.levelLength = 2000; // Total distance to complete the level (in pixels)
+		this.startPosition = 0; // Starting camera position
+		this.distanceTraveled = 0; // How far the player has progressed
+		this.levelProgress = 0; // Percentage of level completed (0-1)
+		this.levelCompleted = false; // Whether the level has been completed
+		this.minFishRequired = 10; // Minimum fish needed to win
+		this.progressBarElement = null; // UI element for progress bar
+
+		// Final level iceberg
+		this.finalIcebergGenerated = false; // Track if final iceberg has been created
+		this.finalIcebergPosition = this.levelLength - 200; // Position final iceberg near the end
+		this.preFinalIcebergGenerated = false; // Track if the iceberg before final has been created
+
+		// Fish distribution tracking
+		this.fishSpawned = 0; // Total fish spawned so far
+		this.guaranteedFishRegions = []; // Track regions that must have fish
+		this.lastGuaranteedFishX = 0; // Last position where guaranteed fish was placed
+
+		// Create UI elements after properties are defined
+		this.createScoreDisplay();
+		this.createProgressBar();
+
 		// Delta time for frame rate independence
 		this.lastTime = 0;
 		this.deltaTime = 0;
@@ -98,6 +123,9 @@ class PenguinGlider {
 	loadImages() {
 		const imageList = [
 			"penguin.png",
+			"penguin-baby.png",
+			"flag.png",
+			"end-level.png",
 			"iceberg1.png",
 			"iceberg2.png",
 			"iceberg3.png",
@@ -358,6 +386,20 @@ class PenguinGlider {
 				gainNode.gain.exponentialRampToValueAtTime(0.01, this.audioContext.currentTime + 0.2);
 				oscillator.start();
 				oscillator.stop(this.audioContext.currentTime + 0.2);
+				break;
+
+			case "win":
+				// Victory sound - ascending triumphant melody
+				oscillator.type = "sine";
+				oscillator.frequency.setValueAtTime(523, this.audioContext.currentTime); // C5
+				oscillator.frequency.setValueAtTime(659, this.audioContext.currentTime + 0.15); // E5
+				oscillator.frequency.setValueAtTime(784, this.audioContext.currentTime + 0.3); // G5
+				oscillator.frequency.setValueAtTime(1047, this.audioContext.currentTime + 0.45); // C6
+				gainNode.gain.setValueAtTime(0.2, this.audioContext.currentTime);
+				gainNode.gain.setValueAtTime(0.25, this.audioContext.currentTime + 0.45);
+				gainNode.gain.exponentialRampToValueAtTime(0.01, this.audioContext.currentTime + 0.8);
+				oscillator.start();
+				oscillator.stop(this.audioContext.currentTime + 0.8);
 				break;
 		}
 	}
@@ -669,12 +711,47 @@ class PenguinGlider {
 
 		this.icebergs.push(iceberg);
 
-		// 30% chance to spawn a fish on top of this iceberg
-		if (Math.random() < 0.3) {
-			this.spawnFishOnIceberg(iceberg);
-		}
+		// Intelligent fish spawning to ensure minimum availability
+		this.smartFishSpawning(iceberg);
 
 		return newIcebergY;
+	}
+
+	generateFinalIceberg() {
+		// Create the special final iceberg with end-level image
+		if (this.imagesReady && this.images["end-level"]) {
+			const endLevelImage = this.images["end-level"];
+
+			// Make the final iceberg smaller than normal icebergs
+			const scaleFactor = 0.4;
+			const width = endLevelImage.naturalWidth * scaleFactor;
+			const height = endLevelImage.naturalHeight * scaleFactor;
+
+			// Position the final iceberg so its left edge aligns with the end of the level
+			const finalIcebergX = this.levelLength;
+			const finalIcebergY = this.waterLevel - height - 150; // 20px above water level
+
+			// Create smaller collision box (only bottom part of the iceberg)
+			const colliderHeight = height * 0.6; // Collision box is 60% of image height
+			const colliderY = finalIcebergY + (height - colliderHeight); // Position at bottom of image
+
+			const finalIceberg = {
+				x: finalIcebergX,
+				y: finalIcebergY,
+				width: width,
+				height: height,
+				// Collision box properties (smaller than visual image)
+				colliderX: finalIcebergX,
+				colliderY: colliderY,
+				colliderWidth: width,
+				colliderHeight: colliderHeight,
+				imageType: "end-level", // Special type for the final iceberg
+				isFinalIceberg: true, // Flag to identify this as the special ending
+			};
+
+			this.icebergs.push(finalIceberg);
+			this.finalIcebergGenerated = true;
+		}
 	}
 
 	generateSnowflakes() {
@@ -870,19 +947,87 @@ class PenguinGlider {
 
 		// Prevent camera from going below water level
 		this.camera.y = Math.min(this.camera.y, this.waterLevel - this.canvas.height + waterBufferHeight);
+
+		// Update level progression
+		this.updateLevelProgress();
+	}
+
+	updateLevelProgress() {
+		// Calculate distance traveled based on camera position from start
+		this.distanceTraveled = Math.max(0, this.camera.x - this.startPosition);
+
+		// Calculate progress percentage (0-1)
+		this.levelProgress = Math.min(1, this.distanceTraveled / this.levelLength);
+
+		// Update progress bar display
+		this.updateProgressBar();
+
+		// Check if level is completed - but only if penguin is actually on the final iceberg
+		if (!this.levelCompleted && this.levelProgress >= 1) {
+			this.checkLevelCompletion();
+		}
 	}
 
 	updateIcebergs(deltaMultiplier = 1) {
 		// Remove icebergs that are off camera view (left side)
 		this.icebergs = this.icebergs.filter((iceberg) => iceberg.x + iceberg.width > this.camera.x - 200);
 
-		// Generate new icebergs ahead of camera
+		// Generate final iceberg when approaching the end
+		if (!this.finalIcebergGenerated && this.camera.x > this.finalIcebergPosition - 1000) {
+			this.generateFinalIceberg();
+		}
+
+		// Generate pre-final iceberg to ensure there's always one iceberg before the final one
+		if (!this.preFinalIcebergGenerated && this.camera.x > this.finalIcebergPosition - 1500) {
+			const preFinalIcebergX = this.finalIcebergPosition - 400; // 400 pixels before final iceberg
+			this.generateIceberg(preFinalIcebergX);
+			this.preFinalIcebergGenerated = true;
+		}
+
+		// Check if we need to guarantee more fish before the final iceberg
+		const fishDeficit = this.minFishRequired - this.fishSpawned;
+		const distanceToFinalIceberg = this.finalIcebergPosition - this.camera.x;
+		const isApproachingEnd = distanceToFinalIceberg < 2000; // Within 2000 pixels of final iceberg
+
+		// Generate new icebergs ahead of camera (but not beyond the final iceberg)
 		if (this.icebergs.length < 8) {
-			// More icebergs for seamless experience with increased spacing
 			const lastIceberg = this.icebergs[this.icebergs.length - 1];
-			// Increased base distance for more spacing between larger icebergs
 			const baseDistance = 200; // Increased spacing for larger icebergs
-			this.generateIceberg(lastIceberg.x + baseDistance);
+			const nextIcebergX = lastIceberg.x + baseDistance;
+
+			// Normal iceberg generation boundary
+			let shouldGenerate = nextIcebergX < this.finalIcebergPosition - 300;
+
+			// Force generation if we need more fish and are approaching the end
+			if (isApproachingEnd && fishDeficit > 0 && nextIcebergX < this.finalIcebergPosition - 100) {
+				shouldGenerate = true;
+			}
+
+			if (shouldGenerate) {
+				this.generateIceberg(nextIcebergX);
+			}
+		}
+
+		// Emergency fish spawning: if we're very close to final iceberg and still need fish
+		if (isApproachingEnd && fishDeficit > 0 && distanceToFinalIceberg < 800) {
+			// Find the nearest iceberg ahead of the camera that doesn't have fish
+			for (let iceberg of this.icebergs) {
+				if (iceberg.x > this.camera.x && !iceberg.isFinalIceberg) {
+					// Check if this iceberg already has fish
+					const hasExistingFish = this.fish.some(
+						(fish) =>
+							fish.x >= iceberg.x &&
+							fish.x <= iceberg.x + iceberg.width &&
+							fish.y >= iceberg.y - 30 &&
+							fish.y <= iceberg.y + 10
+					);
+
+					if (!hasExistingFish) {
+						this.spawnFishOnIceberg(iceberg);
+						break; // Only spawn one fish per frame to avoid spam
+					}
+				}
+			}
 		}
 	}
 
@@ -915,6 +1060,55 @@ class PenguinGlider {
 			imageType: Math.floor(Math.random() * 4) + 1,
 		};
 		this.fish.push(fish);
+		this.fishSpawned++;
+	}
+
+	smartFishSpawning(iceberg) {
+		// Don't spawn fish on the final iceberg
+		if (iceberg.isFinalIceberg) {
+			return;
+		}
+
+		// Calculate how many fish we should have spawned by this point
+		const distanceFromStart = iceberg.x - this.startPosition;
+		const progressThroughLevel = Math.min(distanceFromStart / this.levelLength, 1);
+		const expectedFishByNow = Math.floor(progressThroughLevel * (this.minFishRequired + 5)); // +5 buffer for safety
+
+		// Check if we need guaranteed fish
+		const regionSize = this.levelLength / (this.minFishRequired + 3); // Divide level into regions
+		const currentRegion = Math.floor(distanceFromStart / regionSize);
+		const shouldGuaranteeFish =
+			this.fishSpawned < expectedFishByNow || distanceFromStart - this.lastGuaranteedFishX > regionSize * 1.5;
+
+		// Special handling for approaching final iceberg (last 20% of level)
+		const isApproachingEnd = progressThroughLevel > 0.8;
+		const fishNeededToComplete = this.minFishRequired - this.fishSpawned;
+
+		// Spawn fish with intelligent probability
+		let spawnChance = 0.3; // Base 30% chance
+
+		if (shouldGuaranteeFish) {
+			spawnChance = 0.8; // 80% chance when we need more fish
+		} else if (this.fishSpawned >= this.minFishRequired + 8) {
+			spawnChance = 0.15; // Reduce spawn rate if we have plenty
+		}
+
+		// Aggressive spawning when approaching the end and still need fish
+		if (isApproachingEnd && fishNeededToComplete > 0) {
+			spawnChance = 1.0; // Guarantee spawn when approaching final iceberg and still need fish
+		}
+
+		// Force spawn if we're critically behind
+		if (this.fishSpawned < Math.floor(progressThroughLevel * this.minFishRequired * 0.7)) {
+			spawnChance = 1.0; // Guarantee spawn
+		}
+
+		if (Math.random() < spawnChance) {
+			this.spawnFishOnIceberg(iceberg);
+			if (shouldGuaranteeFish) {
+				this.lastGuaranteedFishX = iceberg.x;
+			}
+		}
 	}
 
 	updateParticles(deltaMultiplier = 1) {
@@ -954,21 +1148,27 @@ class PenguinGlider {
 		// Safety function to ensure penguin is never stuck inside an iceberg
 		// Use larger margins to be less sensitive and reduce shakiness
 		for (let iceberg of this.icebergs) {
+			// Use collider properties if they exist (for final iceberg), otherwise use full dimensions
+			const icebergX = iceberg.colliderX !== undefined ? iceberg.colliderX : iceberg.x;
+			const icebergY = iceberg.colliderY !== undefined ? iceberg.colliderY : iceberg.y;
+			const icebergWidth = iceberg.colliderWidth !== undefined ? iceberg.colliderWidth : iceberg.width;
+			const icebergHeight = iceberg.colliderHeight !== undefined ? iceberg.colliderHeight : iceberg.height;
+
 			// Check if penguin is deeply inside this iceberg (not just touching edges)
 			const isInsideHorizontally =
-				this.penguin.x + this.penguin.width > iceberg.x + 15 && this.penguin.x < iceberg.x + iceberg.width - 15;
+				this.penguin.x + this.penguin.width > icebergX + 15 && this.penguin.x < icebergX + icebergWidth - 15;
 
 			const isInsideVertically =
-				this.penguin.y + this.penguin.height > iceberg.y + 15 && this.penguin.y < iceberg.y + iceberg.height - 15;
+				this.penguin.y + this.penguin.height > icebergY + 15 && this.penguin.y < icebergY + icebergHeight - 15;
 
 			if (isInsideHorizontally && isInsideVertically) {
 				// Penguin is deeply stuck inside iceberg! Apply gentle correction
 
 				// Calculate distances to each edge
-				const distanceToTop = Math.abs(this.penguin.y + this.penguin.height - iceberg.y);
-				const distanceToBottom = Math.abs(this.penguin.y - (iceberg.y + iceberg.height));
-				const distanceToLeft = Math.abs(this.penguin.x + this.penguin.width - iceberg.x);
-				const distanceToRight = Math.abs(this.penguin.x - (iceberg.x + iceberg.width));
+				const distanceToTop = Math.abs(this.penguin.y + this.penguin.height - icebergY);
+				const distanceToBottom = Math.abs(this.penguin.y - (icebergY + icebergHeight));
+				const distanceToLeft = Math.abs(this.penguin.x + this.penguin.width - icebergX);
+				const distanceToRight = Math.abs(this.penguin.x - (icebergX + icebergWidth));
 
 				// Find the closest edge and gently push penguin out that way
 				const minDistance = Math.min(distanceToTop, distanceToBottom, distanceToLeft, distanceToRight);
@@ -978,24 +1178,24 @@ class PenguinGlider {
 
 				if (minDistance === distanceToTop) {
 					// Gently move penguin to top of iceberg
-					const targetY = iceberg.y - this.penguin.height;
+					const targetY = icebergY - this.penguin.height;
 					this.penguin.y = this.penguin.y * (1 - smoothingFactor) + targetY * smoothingFactor;
 					this.penguin.velocityY = Math.min(this.penguin.velocityY, -1); // Gentle upward correction
 					this.penguin.onIceberg = true;
 				} else if (minDistance === distanceToBottom) {
 					// Gently move penguin below iceberg
-					const targetY = iceberg.y + iceberg.height;
+					const targetY = icebergY + icebergHeight;
 					this.penguin.y = this.penguin.y * (1 - smoothingFactor) + targetY * smoothingFactor;
 					this.penguin.velocityY = Math.max(this.penguin.velocityY, 1); // Gentle downward correction
 					this.penguin.onIceberg = false;
 				} else if (minDistance === distanceToLeft) {
 					// Gently move penguin to left of iceberg
-					const targetX = iceberg.x - this.penguin.width;
+					const targetX = icebergX - this.penguin.width;
 					this.penguin.x = this.penguin.x * (1 - smoothingFactor) + targetX * smoothingFactor;
 					this.penguin.velocityX = Math.min(this.penguin.velocityX, -1); // Gentle leftward correction
 				} else {
 					// Gently move penguin to right of iceberg
-					const targetX = iceberg.x + iceberg.width;
+					const targetX = icebergX + icebergWidth;
 					this.penguin.x = this.penguin.x * (1 - smoothingFactor) + targetX * smoothingFactor;
 					this.penguin.velocityX = Math.max(this.penguin.velocityX, 1); // Gentle rightward correction
 				}
@@ -1011,21 +1211,27 @@ class PenguinGlider {
 		const penguinHeight = this.penguin.height;
 
 		for (let iceberg of this.icebergs) {
+			// Use collider properties if available (for final iceberg), otherwise use regular dimensions
+			const icebergX = iceberg.colliderX !== undefined ? iceberg.colliderX : iceberg.x;
+			const icebergY = iceberg.colliderY !== undefined ? iceberg.colliderY : iceberg.y;
+			const icebergWidth = iceberg.colliderWidth !== undefined ? iceberg.colliderWidth : iceberg.width;
+			const icebergHeight = iceberg.colliderHeight !== undefined ? iceberg.colliderHeight : iceberg.height;
+
 			// Check if the penguin's new position would overlap with the iceberg
 			// Use moderate bounds to prevent clipping while avoiding shakiness
 			const wouldOverlap =
-				newX < iceberg.x + iceberg.width - 1 &&
-				newX + penguinWidth > iceberg.x + 1 &&
-				newY < iceberg.y + iceberg.height - 1 &&
-				newY + penguinHeight > iceberg.y - 3; // Consistent with landing detection
+				newX < icebergX + icebergWidth - 1 &&
+				newX + penguinWidth > icebergX + 1 &&
+				newY < icebergY + icebergHeight - 1 &&
+				newY + penguinHeight > icebergY - 3; // Consistent with landing detection
 
 			if (wouldOverlap) {
 				// Check if penguin was previously overlapping (already inside)
 				const wasOverlapping =
-					prevX < iceberg.x + iceberg.width - 1 &&
-					prevX + penguinWidth > iceberg.x + 1 &&
-					prevY < iceberg.y + iceberg.height - 1 &&
-					prevY + penguinHeight > iceberg.y - 3;
+					prevX < icebergX + icebergWidth - 1 &&
+					prevX + penguinWidth > icebergX + 1 &&
+					prevY < icebergY + icebergHeight - 1 &&
+					prevY + penguinHeight > icebergY - 3;
 
 				// If already overlapping, don't stop movement (let penguin escape)
 				if (wasOverlapping) {
@@ -1035,8 +1241,8 @@ class PenguinGlider {
 				// Special case: Allow horizontal movement when penguin is standing on top of iceberg
 				// Check if penguin is just standing on the surface (not deeply embedded)
 				const standingOnSurface =
-					prevY + penguinHeight >= iceberg.y - 5 && // Close to top surface
-					prevY + penguinHeight <= iceberg.y + 15 && // Not too deep inside
+					prevY + penguinHeight >= icebergY - 5 && // Close to top surface
+					prevY + penguinHeight <= icebergY + 15 && // Not too deep inside
 					this.penguin.onIceberg; // Confirmed to be on an iceberg
 
 				const moveX = newX - prevX;
@@ -1052,10 +1258,10 @@ class PenguinGlider {
 				}
 
 				// Calculate overlap amounts for each direction
-				const overlapLeft = prevX + penguinWidth - iceberg.x;
-				const overlapRight = iceberg.x + iceberg.width - prevX;
-				const overlapTop = prevY + penguinHeight - iceberg.y;
-				const overlapBottom = iceberg.y + iceberg.height - prevY;
+				const overlapLeft = prevX + penguinWidth - icebergX;
+				const overlapRight = icebergX + icebergWidth - prevX;
+				const overlapTop = prevY + penguinHeight - icebergY;
+				const overlapBottom = icebergY + icebergHeight - prevY;
 
 				// Find the smallest overlap (most likely collision direction)
 				const minOverlap = Math.min(overlapLeft, overlapRight, overlapTop, overlapBottom);
@@ -1065,27 +1271,27 @@ class PenguinGlider {
 					return {
 						type: "vertical",
 						correctedX: newX,
-						correctedY: iceberg.y - penguinHeight,
+						correctedY: icebergY - penguinHeight,
 					};
 				} else if (minOverlap === overlapBottom && moveY < 0) {
 					// Colliding with bottom of iceberg from below
 					return {
 						type: "vertical",
 						correctedX: newX,
-						correctedY: iceberg.y + iceberg.height,
+						correctedY: icebergY + icebergHeight,
 					};
 				} else if (minOverlap === overlapLeft && moveX > 0) {
 					// Colliding with left side of iceberg from left
 					return {
 						type: "horizontal",
-						correctedX: iceberg.x - penguinWidth,
+						correctedX: icebergX - penguinWidth,
 						correctedY: newY,
 					};
 				} else if (minOverlap === overlapRight && moveX < 0) {
 					// Colliding with right side of iceberg from right
 					return {
 						type: "horizontal",
-						correctedX: iceberg.x + iceberg.width,
+						correctedX: icebergX + icebergWidth,
 						correctedY: newY,
 					};
 				} else {
@@ -1107,16 +1313,22 @@ class PenguinGlider {
 		this.penguin.onIceberg = false;
 
 		for (let iceberg of this.icebergs) {
+			// Use collider properties if they exist (for final iceberg), otherwise use full dimensions
+			const colliderX = iceberg.colliderX !== undefined ? iceberg.colliderX : iceberg.x;
+			const colliderY = iceberg.colliderY !== undefined ? iceberg.colliderY : iceberg.y;
+			const colliderWidth = iceberg.colliderWidth !== undefined ? iceberg.colliderWidth : iceberg.width;
+			const colliderHeight = iceberg.colliderHeight !== undefined ? iceberg.colliderHeight : iceberg.height;
+
 			// Check if penguin is on top of iceberg (more precise landing detection)
 			if (
-				this.penguin.x + this.penguin.width > iceberg.x + 5 && // Small margin from edges
-				this.penguin.x < iceberg.x + iceberg.width - 5 &&
-				this.penguin.y + this.penguin.height >= iceberg.y - 3 &&
-				this.penguin.y + this.penguin.height <= iceberg.y + 12 &&
+				this.penguin.x + this.penguin.width > colliderX + 5 && // Small margin from edges
+				this.penguin.x < colliderX + colliderWidth - 5 &&
+				this.penguin.y + this.penguin.height >= colliderY - 3 &&
+				this.penguin.y + this.penguin.height <= colliderY + 12 &&
 				this.penguin.velocityY >= -1 // Allow slight upward velocity for landing
 			) {
 				// Snap penguin to slightly into the iceberg surface for more realistic look
-				this.penguin.y = iceberg.y - this.penguin.height + 3;
+				this.penguin.y = colliderY - this.penguin.height + 3;
 				this.penguin.velocityY = 0;
 				this.penguin.onIceberg = true;
 				this.penguin.gliding = false;
@@ -1290,7 +1502,7 @@ class PenguinGlider {
 
 		// Create message below
 		this.scoreMessage = document.createElement("div");
-		this.scoreMessage.textContent = "collect at least 10!";
+		this.scoreMessage.textContent = `collect at least ${this.minFishRequired}!`;
 		this.scoreMessage.style.color = "#000000";
 		this.scoreMessage.style.fontSize = "clamp(16px, 3vw, 24px)";
 		this.scoreMessage.style.fontWeight = "400";
@@ -1307,7 +1519,184 @@ class PenguinGlider {
 
 	updateScoreDisplay() {
 		this.scoreText.textContent = `x ${this.score}`;
-		this.scoreMessage.style.color = this.score >= 10 ? "#00ff00" : "#bc0000ff";
+		this.scoreMessage.style.color = this.score >= this.minFishRequired ? "#00ff00" : "#bc0000ff";
+	}
+
+	updateFishRequirement() {
+		// Update the fish requirement message to reflect current minFishRequired
+		if (this.scoreMessage) {
+			this.scoreMessage.textContent = `collect at least ${this.minFishRequired}!`;
+		}
+		// Also update the score display color
+		this.updateScoreDisplay();
+	}
+
+	createProgressBar() {
+		// Create container for progress bar
+		this.progressBarContainer = document.createElement("div");
+		this.progressBarContainer.style.position = "fixed";
+		this.progressBarContainer.style.top = "max(20px, env(safe-area-inset-top, 20px))";
+		this.progressBarContainer.style.left = "50%";
+		this.progressBarContainer.style.transform = "translateX(-50%)";
+		this.progressBarContainer.style.width = "380px";
+		this.progressBarContainer.style.maxWidth = "75vw";
+		this.progressBarContainer.style.zIndex = "10";
+		this.progressBarContainer.style.display = "flex";
+		this.progressBarContainer.style.alignItems = "center";
+		this.progressBarContainer.style.gap = "10px";
+
+		// Create progress bar track container (takes most of the space)
+		this.progressBarTrack = document.createElement("div");
+		this.progressBarTrack.style.position = "relative";
+		this.progressBarTrack.style.width = "100%";
+		this.progressBarTrack.style.height = "20px";
+		this.progressBarTrack.style.backgroundColor = "rgba(255, 255, 255, 0.3)";
+		this.progressBarTrack.style.borderRadius = "10px";
+		this.progressBarTrack.style.border = "2px solid #000000";
+		this.progressBarTrack.style.overflow = "visible";
+
+		// Create progress bar fill
+		this.progressBarFill = document.createElement("div");
+		this.progressBarFill.style.width = "0%";
+		this.progressBarFill.style.height = "100%";
+		this.progressBarFill.style.backgroundColor = "#4a90e2";
+		this.progressBarFill.style.borderRadius = "8px";
+		this.progressBarFill.style.transition = "width 0.3s ease";
+
+		// Create moving penguin indicator
+		this.progressPenguin = document.createElement("img");
+		this.progressPenguin.src = "img/penguin.png";
+		this.progressPenguin.style.position = "absolute";
+		this.progressPenguin.style.width = "28px";
+		this.progressPenguin.style.height = "28px";
+		this.progressPenguin.style.top = "-16px"; // Center on track
+		this.progressPenguin.style.left = "0%";
+		this.progressPenguin.style.transition = "left 0.3s ease";
+		this.progressPenguin.style.transform = "translateX(-50%)";
+		this.progressPenguin.style.zIndex = "2";
+		this.progressPenguin.style.objectFit = "contain";
+
+		// Create end container for baby penguin and flag
+		this.progressEndContainer = document.createElement("div");
+		this.progressEndContainer.style.display = "flex";
+		this.progressEndContainer.style.alignItems = "center";
+		this.progressEndContainer.style.gap = "0px";
+		this.progressEndContainer.style.flexShrink = "0";
+
+		// Create penguin-baby icon (positioned at end)
+		this.progressBabyIcon = document.createElement("img");
+		this.progressBabyIcon.src = "img/penguin-baby.png";
+		this.progressBabyIcon.style.width = "35px";
+		this.progressBabyIcon.style.height = "35px";
+		this.progressBabyIcon.style.objectFit = "contain";
+		this.progressBabyIcon.style.flexShrink = "0";
+
+		// Create progress text
+		this.progressText = document.createElement("div");
+		this.progressText.style.textAlign = "center";
+		this.progressText.style.fontSize = "clamp(10px, 2vw, 14px)";
+		this.progressText.style.fontWeight = "bold";
+		this.progressText.style.color = "#000000";
+		this.progressText.style.marginTop = "4px";
+		this.progressText.style.width = "100%";
+		this.progressText.textContent = "Level Progress: 0%";
+
+		// Assemble the track elements
+		this.progressBarTrack.appendChild(this.progressBarFill);
+		this.progressBarTrack.appendChild(this.progressPenguin);
+
+		// Assemble the end container
+		this.progressEndContainer.appendChild(this.progressBabyIcon);
+
+		// Assemble the main elements
+		this.progressBarContainer.appendChild(this.progressBarTrack);
+		this.progressBarContainer.appendChild(this.progressEndContainer);
+
+		// Create container for the whole progress system
+		this.progressSystemContainer = document.createElement("div");
+		this.progressSystemContainer.appendChild(this.progressBarContainer);
+		this.progressSystemContainer.appendChild(this.progressText);
+
+		document.body.appendChild(this.progressSystemContainer);
+	}
+
+	updateProgressBar() {
+		if (this.progressBarFill && this.progressText && this.progressPenguin) {
+			const progressPercent = Math.round(this.levelProgress * 100);
+			this.progressBarFill.style.width = `${progressPercent}%`;
+			this.progressText.textContent = `Level Progress: ${progressPercent}%`;
+
+			// Move the penguin indicator
+			this.progressPenguin.style.left = `${progressPercent}%`;
+
+			// Change color as we get closer to the end
+			if (progressPercent >= 90) {
+				this.progressBarFill.style.backgroundColor = "#00ff00"; // Green when almost done
+			} else if (progressPercent >= 70) {
+				this.progressBarFill.style.backgroundColor = "#ffaa00"; // Orange when getting close
+			} else {
+				this.progressBarFill.style.backgroundColor = "#4a90e2"; // Blue for most of the journey
+			}
+		}
+	}
+
+	checkLevelCompletion() {
+		// Check if penguin is actually on the final iceberg, not just reached the distance
+		let onFinalIceberg = false;
+		for (let iceberg of this.icebergs) {
+			if (iceberg.isFinalIceberg) {
+				// Use collider properties for final iceberg landing detection
+				const colliderX = iceberg.colliderX !== undefined ? iceberg.colliderX : iceberg.x;
+				const colliderY = iceberg.colliderY !== undefined ? iceberg.colliderY : iceberg.y;
+				const colliderWidth = iceberg.colliderWidth !== undefined ? iceberg.colliderWidth : iceberg.width;
+				const colliderHeight = iceberg.colliderHeight !== undefined ? iceberg.colliderHeight : iceberg.height;
+
+				// Check if penguin is standing on the final iceberg collision area
+				if (
+					this.penguin.x + this.penguin.width > colliderX + 5 &&
+					this.penguin.x < colliderX + colliderWidth - 5 &&
+					this.penguin.y + this.penguin.height >= colliderY - 3 &&
+					this.penguin.y + this.penguin.height <= colliderY + 12 &&
+					this.penguin.onIceberg
+				) {
+					onFinalIceberg = true;
+					break;
+				}
+			}
+		}
+
+		// Only complete the level if penguin is actually on the final iceberg
+		if (onFinalIceberg) {
+			this.levelCompleted = true;
+
+			// Check win conditions: enough fish and time remaining
+			const hasEnoughFish = this.score >= this.minFishRequired;
+			const hasTimeLeft = this.timer.remainingTime > 0;
+
+			if (hasEnoughFish && hasTimeLeft) {
+				this.levelWin();
+			} else {
+				this.gameOver(); // Failed to meet win conditions
+			}
+		}
+	}
+
+	levelWin() {
+		this.gameState = "won";
+		this.timer.stop();
+		this.timer.hide();
+		this.scoreContainer.style.display = "none";
+		this.progressSystemContainer.style.display = "none";
+		this.showWinScreen();
+		this.playSound("win");
+	}
+
+	showWinScreen() {
+		if (this.winScreenElement && this.winScoreElement && this.winTimeElement) {
+			this.winScoreElement.textContent = this.score;
+			this.winTimeElement.textContent = this.timer.formatTime(Math.ceil(this.timer.remainingTime));
+			this.winScreenElement.style.display = "block";
+		}
 	}
 
 	restart() {
@@ -1335,12 +1724,31 @@ class PenguinGlider {
 		this.camera.targetX = 0;
 		this.camera.targetY = 0;
 
+		// Reset level progression
+		this.startPosition = 0;
+		this.distanceTraveled = 0;
+		this.levelProgress = 0;
+		this.levelCompleted = false;
+		this.updateProgressBar();
+
+		// Reset fish tracking
+		this.fishSpawned = 0;
+		this.guaranteedFishRegions = [];
+		this.lastGuaranteedFishX = 0;
+
+		// Reset final iceberg
+		this.finalIcebergGenerated = false;
+		this.finalIcebergPosition = this.levelLength - 200;
+		this.preFinalIcebergGenerated = false;
+
 		this.generateInitialIcebergs();
 		this.positionPenguinOnFirstIceberg(); // Position penguin on first iceberg after restart
 		this.generateSnowflakes(); // Regenerate snowflakes for new camera position
 		this.gameOverElement.style.display = "none";
+		this.winScreenElement.style.display = "none";
 		this.updateScoreDisplay();
 		this.scoreContainer.style.display = "block";
+		this.progressSystemContainer.style.display = "block";
 	}
 
 	render() {
@@ -1500,9 +1908,12 @@ class PenguinGlider {
 			this.canvas.height
 		);
 
-		// Draw icebergs
+		// Draw icebergs (regular icebergs first)
 		for (let iceberg of this.icebergs) {
-			// Use iceberg image if loaded, otherwise fall back to drawn iceberg
+			// Skip final iceberg for now - we'll draw it later in foreground
+			if (iceberg.isFinalIceberg) continue;
+
+			// Use regular iceberg image if loaded, otherwise fall back to drawn iceberg
 			if (this.imagesReady && this.images[`iceberg${iceberg.imageType}`]) {
 				// Draw image at iceberg's stored dimensions (no cropping)
 				this.ctx.drawImage(
@@ -1676,6 +2087,14 @@ class PenguinGlider {
 			this.ctx.stroke();
 		}
 
+		// Draw final iceberg in foreground (on top of everything else including water)
+		for (let iceberg of this.icebergs) {
+			if (iceberg.isFinalIceberg && this.imagesReady && this.images["end-level"]) {
+				// Draw the special end-level image in foreground
+				this.ctx.drawImage(this.images["end-level"], iceberg.x, iceberg.y, iceberg.width, iceberg.height);
+			}
+		}
+
 		// Draw all hitboxes for debugging (if enabled)
 		if (this.showHitboxes) {
 			this.drawAllHitboxes();
@@ -1844,7 +2263,14 @@ class PenguinGlider {
 		// Draw iceberg hitboxes
 		for (let i = 0; i < this.icebergs.length; i++) {
 			const iceberg = this.icebergs[i];
-			this.drawHitbox(iceberg.x, iceberg.y, iceberg.width, iceberg.height, "cyan", `Iceberg ${i + 1}`);
+
+			// Use collider properties if they exist (for final iceberg), otherwise use full dimensions
+			const hitboxX = iceberg.colliderX !== undefined ? iceberg.colliderX : iceberg.x;
+			const hitboxY = iceberg.colliderY !== undefined ? iceberg.colliderY : iceberg.y;
+			const hitboxWidth = iceberg.colliderWidth !== undefined ? iceberg.colliderWidth : iceberg.width;
+			const hitboxHeight = iceberg.colliderHeight !== undefined ? iceberg.colliderHeight : iceberg.height;
+
+			this.drawHitbox(hitboxX, hitboxY, hitboxWidth, hitboxHeight, "cyan", `Iceberg ${i + 1}`);
 		}
 
 		// Draw fish hitboxes
@@ -1864,6 +2290,34 @@ class PenguinGlider {
 		this.ctx.fillStyle = "blue";
 		this.ctx.font = "16px Arial";
 		this.ctx.fillText("Water Level", this.camera.x + 10, this.waterLevel - 10);
+		this.ctx.restore();
+
+		// Draw fish distribution debug info
+		this.ctx.save();
+		this.ctx.fillStyle = "white";
+		this.ctx.strokeStyle = "black";
+		this.ctx.lineWidth = 1;
+		this.ctx.font = "14px Arial";
+
+		const debugX = this.camera.x + 10;
+		const debugY = this.camera.y + 50;
+		const lineHeight = 20;
+		let lineIndex = 0;
+
+		// Background for text
+		this.ctx.fillStyle = "rgba(0, 0, 0, 0.7)";
+		this.ctx.fillRect(debugX - 5, debugY - 5, 300, lineHeight * 5 + 10);
+
+		this.ctx.fillStyle = "white";
+		this.ctx.fillText(`Fish Spawned: ${this.fishSpawned}`, debugX, debugY + lineHeight * lineIndex++);
+		this.ctx.fillText(`Fish Required: ${this.minFishRequired}`, debugX, debugY + lineHeight * lineIndex++);
+		this.ctx.fillText(`Fish Available: ${this.fish.length}`, debugX, debugY + lineHeight * lineIndex++);
+
+		const progressPercent = Math.round(this.levelProgress * 100);
+		const expectedFish = Math.floor(this.levelProgress * (this.minFishRequired + 5));
+		this.ctx.fillText(`Level Progress: ${progressPercent}%`, debugX, debugY + lineHeight * lineIndex++);
+		this.ctx.fillText(`Expected Fish: ${expectedFish}`, debugX, debugY + lineHeight * lineIndex++);
+
 		this.ctx.restore();
 	}
 
