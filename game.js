@@ -82,6 +82,7 @@ class PenguinGlider {
 		this.imagesReady = false;
 
 		this.waterImageYOffset = null; // Will be set after first iceberg is created
+		this.mountainImageYOffset = null; // Will be set after first iceberg is created
 		this.initAudio();
 		this.loadImages();
 	}
@@ -1264,7 +1265,6 @@ class PenguinGlider {
 		if (this.imagesReady && this.images.moutain) {
 			// Draw repeating mountain background with parallax effect
 			const mountainDistance = Math.min(500, this.canvas.height * 0.6);
-			const mountainY = this.waterLevel - mountainDistance;
 			const mountainHeight = Math.min(225, this.canvas.height * 0.25);
 			const parallaxSpeed = 0.3; // Mountains move slower than camera for depth effect
 			const parallaxX = this.camera.x * parallaxSpeed;
@@ -1278,6 +1278,14 @@ class PenguinGlider {
 			const leftBound = this.camera.x - renderBuffer;
 			const rightBound = this.camera.x + this.canvas.width + renderBuffer;
 
+			// Store the mountain Y position only once, when the first iceberg exists
+			if (this.mountainImageYOffset === null && this.icebergs && this.icebergs.length > 0) {
+				const firstIceberg = this.icebergs[0];
+				// Store the Y position where the mountain should be drawn (its top-left corner)
+				// We want the bottom of the mountain at firstIceberg.y, so top-left is at firstIceberg.y - mountainHeight
+				this.mountainImageYOffset = firstIceberg.y - mountainHeight + 100;
+			}
+
 			// Calculate the starting tile position based on parallax offset
 			const startTile = Math.floor((leftBound - parallaxX) / mountainWidth);
 			const endTile = Math.ceil((rightBound - parallaxX) / mountainWidth);
@@ -1286,7 +1294,10 @@ class PenguinGlider {
 			for (let tile = startTile; tile <= endTile; tile++) {
 				// World position accounting for parallax
 				const x = parallaxX + tile * mountainWidth;
-				this.drawImagePreserveAspect(this.images.moutain, x, mountainY, mountainWidth, mountainHeight, "bottom");
+				// Use the stored Y position if available, otherwise use default calculation
+				const mountainY =
+					this.mountainImageYOffset !== null ? this.mountainImageYOffset : this.waterLevel - mountainDistance;
+				this.drawImagePreserveAspect(this.images.moutain, x, mountainY, mountainWidth, mountainHeight, "top");
 			}
 		}
 
