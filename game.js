@@ -67,7 +67,7 @@ class PenguinGlider {
 		};
 
 		// Level progression system
-		this.levelLength = 2000; // Total distance to complete the level (in pixels)
+		this.levelLength = 10000; // Total distance to complete the level (in pixels)
 		this.startPosition = 0; // Starting camera position
 		this.distanceTraveled = 0; // How far the player has progressed
 		this.levelProgress = 0; // Percentage of level completed (0-1)
@@ -1319,6 +1319,31 @@ class PenguinGlider {
 			const colliderWidth = iceberg.colliderWidth !== undefined ? iceberg.colliderWidth : iceberg.width;
 			const colliderHeight = iceberg.colliderHeight !== undefined ? iceberg.colliderHeight : iceberg.height;
 
+			// Check for any collision with the final iceberg to complete the game
+			if (iceberg.isFinalIceberg) {
+				const penguinCollidesFinalIceberg =
+					this.penguin.x < colliderX + colliderWidth &&
+					this.penguin.x + this.penguin.width > colliderX &&
+					this.penguin.y < colliderY + colliderHeight &&
+					this.penguin.y + this.penguin.height > colliderY;
+
+				if (penguinCollidesFinalIceberg && !this.levelCompleted) {
+					// Penguin touched the final iceberg! Complete the level immediately
+					this.levelCompleted = true;
+
+					// Check win conditions: enough fish and time remaining
+					const hasEnoughFish = this.score >= this.minFishRequired;
+					const hasTimeLeft = this.timer.remainingTime > 0;
+
+					if (hasEnoughFish && hasTimeLeft) {
+						this.levelWin();
+					} else {
+						this.gameOver(); // Failed to meet win conditions
+					}
+					return; // Exit early since game is over
+				}
+			}
+
 			// Check if penguin is on top of iceberg (more precise landing detection)
 			if (
 				this.penguin.x + this.penguin.width > colliderX + 5 && // Small margin from edges
@@ -1420,9 +1445,9 @@ class PenguinGlider {
 	gameOver() {
 		this.gameState = "gameOver";
 		this.gameOverElement.style.display = "block";
-		
+
 		// Create and position the try again button image
-		const tryAgainBtn = document.createElement('img');
+		const tryAgainBtn = document.createElement("img");
 		tryAgainBtn.src = "img/try-again.png";
 		tryAgainBtn.style.position = "absolute";
 		tryAgainBtn.style.left = "50%";
@@ -1438,17 +1463,17 @@ class PenguinGlider {
 		tryAgainBtn.style.transition = "transform 0.2s ease";
 
 		// Hover reaction: slightly enlarge
-		tryAgainBtn.addEventListener('mouseenter', () => {
+		tryAgainBtn.addEventListener("mouseenter", () => {
 			tryAgainBtn.style.transform = "translate(-50%, -50%) scale(1.1)";
 		});
-		tryAgainBtn.addEventListener('mouseleave', () => {
+		tryAgainBtn.addEventListener("mouseleave", () => {
 			tryAgainBtn.style.transform = "translate(-50%, -50%) scale(1)";
 		});
 
 		tryAgainBtn.onclick = restartGame;
-		
+
 		// Create loss reason text with timer font style
-		const lossReason = document.createElement('p');
+		const lossReason = document.createElement("p");
 		lossReason.style.fontFamily = "'Share Tech Mono', monospace";
 		lossReason.style.position = "absolute";
 		lossReason.style.left = "50%";
@@ -1457,14 +1482,14 @@ class PenguinGlider {
 		lossReason.style.transform = "translate(-50%, -50%)";
 		lossReason.style.fontSize = "clamp(14px, 3.5vw, 22px)";
 		lossReason.textContent = this.penguin.y > this.waterLevel ? "OOOOPS you fell in the icy water!" : "TIME'S UP!";
-		
+
 		// Clear any existing content
-		this.gameOverElement.innerHTML = '';
-		
+		this.gameOverElement.innerHTML = "";
+
 		// Add the new elements
 		this.gameOverElement.appendChild(lossReason);
 		this.gameOverElement.appendChild(tryAgainBtn);
-		
+
 		this.playSound("gameOver");
 		this.timer.stop();
 		this.timer.hide();
@@ -1641,43 +1666,13 @@ class PenguinGlider {
 	}
 
 	checkLevelCompletion() {
-		// Check if penguin is actually on the final iceberg, not just reached the distance
-		let onFinalIceberg = false;
-		for (let iceberg of this.icebergs) {
-			if (iceberg.isFinalIceberg) {
-				// Use collider properties for final iceberg landing detection
-				const colliderX = iceberg.colliderX !== undefined ? iceberg.colliderX : iceberg.x;
-				const colliderY = iceberg.colliderY !== undefined ? iceberg.colliderY : iceberg.y;
-				const colliderWidth = iceberg.colliderWidth !== undefined ? iceberg.colliderWidth : iceberg.width;
-				const colliderHeight = iceberg.colliderHeight !== undefined ? iceberg.colliderHeight : iceberg.height;
+		// Level completion is now handled directly in checkCollisions() when penguin touches final iceberg
+		// This function is kept for compatibility and distance-based progress tracking
 
-				// Check if penguin is standing on the final iceberg collision area
-				if (
-					this.penguin.x + this.penguin.width > colliderX + 5 &&
-					this.penguin.x < colliderX + colliderWidth - 5 &&
-					this.penguin.y + this.penguin.height >= colliderY - 3 &&
-					this.penguin.y + this.penguin.height <= colliderY + 12 &&
-					this.penguin.onIceberg
-				) {
-					onFinalIceberg = true;
-					break;
-				}
-			}
-		}
-
-		// Only complete the level if penguin is actually on the final iceberg
-		if (onFinalIceberg) {
-			this.levelCompleted = true;
-
-			// Check win conditions: enough fish and time remaining
-			const hasEnoughFish = this.score >= this.minFishRequired;
-			const hasTimeLeft = this.timer.remainingTime > 0;
-
-			if (hasEnoughFish && hasTimeLeft) {
-				this.levelWin();
-			} else {
-				this.gameOver(); // Failed to meet win conditions
-			}
+		// Only update level progress if level hasn't been completed yet
+		if (!this.levelCompleted && this.levelProgress >= 1) {
+			// If penguin reached the end distance but hasn't touched final iceberg yet,
+			// don't auto-complete - wait for actual iceberg collision
 		}
 	}
 
@@ -1875,7 +1870,7 @@ class PenguinGlider {
 			) {
 				// Draw snow image
 				// Draw snow image
-				const img = this.images['snow1']; // only snow1
+				const img = this.images["snow1"]; // only snow1
 				if (this.imagesReady && img) {
 					const size = 60;
 					const offset = size / 2;
