@@ -78,6 +78,7 @@ class PenguinGlider {
 		// Final level iceberg
 		this.finalIcebergGenerated = false; // Track if final iceberg has been created
 		this.finalIcebergPosition = this.levelLength - 200; // Position final iceberg near the end
+		this.preFinalIcebergGenerated = false; // Track if the iceberg before final has been created
 
 		// Fish distribution tracking
 		this.fishSpawned = 0; // Total fish spawned so far
@@ -974,6 +975,13 @@ class PenguinGlider {
 			this.generateFinalIceberg();
 		}
 
+		// Generate pre-final iceberg to ensure there's always one iceberg before the final one
+		if (!this.preFinalIcebergGenerated && this.camera.x > this.finalIcebergPosition - 1500) {
+			const preFinalIcebergX = this.finalIcebergPosition - 400; // 400 pixels before final iceberg
+			this.generateIceberg(preFinalIcebergX);
+			this.preFinalIcebergGenerated = true;
+		}
+
 		// Check if we need to guarantee more fish before the final iceberg
 		const fishDeficit = this.minFishRequired - this.fishSpawned;
 		const distanceToFinalIceberg = this.finalIcebergPosition - this.camera.x;
@@ -1646,6 +1654,7 @@ class PenguinGlider {
 		// Reset final iceberg
 		this.finalIcebergGenerated = false;
 		this.finalIcebergPosition = this.levelLength - 200;
+		this.preFinalIcebergGenerated = false;
 
 		this.generateInitialIcebergs();
 		this.positionPenguinOnFirstIceberg(); // Position penguin on first iceberg after restart
