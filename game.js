@@ -821,6 +821,12 @@ class PenguinGlider {
 			this.penguin.y = newY;
 		}
 
+		// SAFETY CHECK: Only validate when penguin is moving significantly or falling
+		const isMovingSignificantly = Math.abs(this.penguin.velocityX) > 1 || Math.abs(this.penguin.velocityY) > 3;
+		if (isMovingSignificantly) {
+			this.validatePenguinPosition();
+		}
+
 		// Update camera to follow penguin
 		this.updateCamera(deltaMultiplier);
 
@@ -942,25 +948,82 @@ class PenguinGlider {
 		}
 	}
 
+	validatePenguinPosition() {
+		// Safety function to ensure penguin is never stuck inside an iceberg
+		// Use larger margins to be less sensitive and reduce shakiness
+		for (let iceberg of this.icebergs) {
+			// Check if penguin is deeply inside this iceberg (not just touching edges)
+			const isInsideHorizontally =
+				this.penguin.x + this.penguin.width > iceberg.x + 15 && this.penguin.x < iceberg.x + iceberg.width - 15;
+
+			const isInsideVertically =
+				this.penguin.y + this.penguin.height > iceberg.y + 15 && this.penguin.y < iceberg.y + iceberg.height - 15;
+
+			if (isInsideHorizontally && isInsideVertically) {
+				// Penguin is deeply stuck inside iceberg! Apply gentle correction
+
+				// Calculate distances to each edge
+				const distanceToTop = Math.abs(this.penguin.y + this.penguin.height - iceberg.y);
+				const distanceToBottom = Math.abs(this.penguin.y - (iceberg.y + iceberg.height));
+				const distanceToLeft = Math.abs(this.penguin.x + this.penguin.width - iceberg.x);
+				const distanceToRight = Math.abs(this.penguin.x - (iceberg.x + iceberg.width));
+
+				// Find the closest edge and gently push penguin out that way
+				const minDistance = Math.min(distanceToTop, distanceToBottom, distanceToLeft, distanceToRight);
+
+				// Use smoother positioning with interpolation to reduce shakiness
+				const smoothingFactor = 0.3; // Blend between current and target position
+
+				if (minDistance === distanceToTop) {
+					// Gently move penguin to top of iceberg
+					const targetY = iceberg.y - this.penguin.height;
+					this.penguin.y = this.penguin.y * (1 - smoothingFactor) + targetY * smoothingFactor;
+					this.penguin.velocityY = Math.min(this.penguin.velocityY, -1); // Gentle upward correction
+					this.penguin.onIceberg = true;
+				} else if (minDistance === distanceToBottom) {
+					// Gently move penguin below iceberg
+					const targetY = iceberg.y + iceberg.height;
+					this.penguin.y = this.penguin.y * (1 - smoothingFactor) + targetY * smoothingFactor;
+					this.penguin.velocityY = Math.max(this.penguin.velocityY, 1); // Gentle downward correction
+					this.penguin.onIceberg = false;
+				} else if (minDistance === distanceToLeft) {
+					// Gently move penguin to left of iceberg
+					const targetX = iceberg.x - this.penguin.width;
+					this.penguin.x = this.penguin.x * (1 - smoothingFactor) + targetX * smoothingFactor;
+					this.penguin.velocityX = Math.min(this.penguin.velocityX, -1); // Gentle leftward correction
+				} else {
+					// Gently move penguin to right of iceberg
+					const targetX = iceberg.x + iceberg.width;
+					this.penguin.x = this.penguin.x * (1 - smoothingFactor) + targetX * smoothingFactor;
+					this.penguin.velocityX = Math.max(this.penguin.velocityX, 1); // Gentle rightward correction
+				}
+
+				// Stop here - only fix one iceberg collision per frame to avoid conflicts
+				break;
+			}
+		}
+	}
+
 	checkSolidCollisions(prevX, prevY, newX, newY) {
 		const penguinWidth = this.penguin.width;
 		const penguinHeight = this.penguin.height;
 
 		for (let iceberg of this.icebergs) {
 			// Check if the penguin's new position would overlap with the iceberg
+			// Use moderate bounds to prevent clipping while avoiding shakiness
 			const wouldOverlap =
-				newX < iceberg.x + iceberg.width &&
-				newX + penguinWidth > iceberg.x &&
-				newY < iceberg.y + iceberg.height &&
+				newX < iceberg.x + iceberg.width - 1 &&
+				newX + penguinWidth > iceberg.x + 1 &&
+				newY < iceberg.y + iceberg.height - 1 &&
 				newY + penguinHeight > iceberg.y - 3; // Consistent with landing detection
 
 			if (wouldOverlap) {
 				// Check if penguin was previously overlapping (already inside)
 				const wasOverlapping =
-					prevX < iceberg.x + iceberg.width &&
-					prevX + penguinWidth > iceberg.x &&
-					prevY < iceberg.y + iceberg.height &&
-					prevY + penguinHeight > iceberg.y - 3; // Consistent with landing detection
+					prevX < iceberg.x + iceberg.width - 1 &&
+					prevX + penguinWidth > iceberg.x + 1 &&
+					prevY < iceberg.y + iceberg.height - 1 &&
+					prevY + penguinHeight > iceberg.y - 3;
 
 				// If already overlapping, don't stop movement (let penguin escape)
 				if (wasOverlapping) {
@@ -1024,7 +1087,7 @@ class PenguinGlider {
 						correctedY: newY,
 					};
 				} else {
-					// Corner collision or complex case
+					// Corner collision or complex case - push to safe previous position
 					return {
 						type: "corner",
 						correctedX: prevX,
@@ -1152,41 +1215,41 @@ class PenguinGlider {
 
 	createScoreDisplay() {
 		// Create container for score display
-		this.scoreContainer = document.createElement('div');
-		this.scoreContainer.style.position = 'fixed';
-		this.scoreContainer.style.top = 'max(20px, env(safe-area-inset-top, 20px))';
-		this.scoreContainer.style.right = '20px';
+		this.scoreContainer = document.createElement("div");
+		this.scoreContainer.style.position = "fixed";
+		this.scoreContainer.style.top = "max(20px, env(safe-area-inset-top, 20px))";
+		this.scoreContainer.style.right = "20px";
 		this.scoreContainer.style.fontFamily = "'Digital-7', 'LCD', monospace";
-		this.scoreContainer.style.zIndex = '10';
+		this.scoreContainer.style.zIndex = "10";
 
 		// Create score display with fish icon
-		this.scoreElement = document.createElement('div');
-		this.scoreElement.style.display = 'flex';
-		this.scoreElement.style.alignItems = 'center';
-		this.scoreElement.style.justifyContent = 'flex-end';
-		this.scoreElement.style.color = '#000000';
-		this.scoreElement.style.fontSize = 'clamp(36px, 6vw, 48px)';
-		this.scoreElement.style.fontWeight = '400';
-		this.scoreElement.style.letterSpacing = '2px';
+		this.scoreElement = document.createElement("div");
+		this.scoreElement.style.display = "flex";
+		this.scoreElement.style.alignItems = "center";
+		this.scoreElement.style.justifyContent = "flex-end";
+		this.scoreElement.style.color = "#000000";
+		this.scoreElement.style.fontSize = "clamp(36px, 6vw, 48px)";
+		this.scoreElement.style.fontWeight = "400";
+		this.scoreElement.style.letterSpacing = "2px";
 
 		// Create fish icon
-		this.fishIcon = document.createElement('img');
-		this.fishIcon.src = 'img/fish4.png';
-		this.fishIcon.style.height = 'clamp(24px, 4vw, 32px)';
-		this.fishIcon.style.marginRight = '8px';
+		this.fishIcon = document.createElement("img");
+		this.fishIcon.src = "img/fish4.png";
+		this.fishIcon.style.height = "clamp(24px, 4vw, 32px)";
+		this.fishIcon.style.marginRight = "8px";
 
 		// Create score text
-		this.scoreText = document.createElement('span');
-		this.scoreText.textContent = 'x 0';
+		this.scoreText = document.createElement("span");
+		this.scoreText.textContent = "x 0";
 
 		// Create message below
-		this.scoreMessage = document.createElement('div');
-		this.scoreMessage.textContent = 'collect at least 10!';
-		this.scoreMessage.style.color = '#000000';
-		this.scoreMessage.style.fontSize = 'clamp(16px, 3vw, 24px)';
-		this.scoreMessage.style.fontWeight = '400';
-		this.scoreMessage.style.textAlign = 'right';
-		this.scoreMessage.style.marginTop = '4px';
+		this.scoreMessage = document.createElement("div");
+		this.scoreMessage.textContent = "collect at least 10!";
+		this.scoreMessage.style.color = "#000000";
+		this.scoreMessage.style.fontSize = "clamp(16px, 3vw, 24px)";
+		this.scoreMessage.style.fontWeight = "400";
+		this.scoreMessage.style.textAlign = "right";
+		this.scoreMessage.style.marginTop = "4px";
 
 		// Assemble the elements
 		this.scoreElement.appendChild(this.fishIcon);
@@ -1198,7 +1261,7 @@ class PenguinGlider {
 
 	updateScoreDisplay() {
 		this.scoreText.textContent = `x ${this.score}`;
-		this.scoreMessage.style.color = this.score >= 10 ? '#00ff00' : '#bc0000ff';
+		this.scoreMessage.style.color = this.score >= 10 ? "#00ff00" : "#bc0000ff";
 	}
 
 	restart() {
