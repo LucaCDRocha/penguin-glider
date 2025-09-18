@@ -81,6 +81,7 @@ class PenguinGlider {
 		this.totalImages = 0;
 		this.imagesReady = false;
 
+		this.waterImageYOffset = null; // Will be set after first iceberg is created
 		this.initAudio();
 		this.loadImages();
 	}
@@ -526,6 +527,27 @@ class PenguinGlider {
 		});
 	}
 
+	// Helper: Get the allowed Y range for icebergs
+	getIcebergYRange(lastIcebergY) {
+		const baseMinOffset = 380 * this.mobileScaleFactor;
+		const baseMaxOffset = 340 * this.mobileScaleFactor;
+		const mobileHeightAdjustment = this.isMobile ? 50 : 0;
+		const minY = Math.max(
+			this.waterLevel - baseMinOffset - mobileHeightAdjustment,
+			lastIcebergY - 150 // maxVerticalReach
+		);
+		const maxY = Math.min(this.waterLevel - baseMaxOffset - mobileHeightAdjustment, lastIcebergY + 60);
+		return { minY, maxY };
+	}
+
+	// Helper: Get the allowed Y range for fish (always above average iceberg)
+	getFishYRange(avgIcebergY, maxJumpHeight) {
+		// Fish always above icebergs, but with some challenge
+		const minY = Math.max(50, avgIcebergY - maxJumpHeight * 0.9);
+		const maxY = Math.min(this.waterLevel - 100, avgIcebergY - 30);
+		return { minY, maxY };
+	}
+
 	generateInitialIcebergs() {
 		// Starting iceberg - use image dimensions if available (tripled size, with mobile scaling)
 		let startWidth = 540 * this.mobileScaleFactor,
@@ -536,22 +558,19 @@ class PenguinGlider {
 			startHeight = 360 * this.mobileScaleFactor; // Apply mobile scale
 			startWidth = startHeight * imageAspect;
 		}
-
-		// On mobile, position starting iceberg higher
-		const mobileHeightAdjustment = this.isMobile ? 50 : 0; // Move 50px higher on mobile (reduced from 100px)
-
+		const mobileHeightAdjustment = this.isMobile ? 50 : 0;
+		const startY = this.waterLevel - startHeight - 20 - mobileHeightAdjustment;
 		this.icebergs.push({
-			x: 100 - startWidth / 2, // Center iceberg with penguin x position
-			y: this.waterLevel - startHeight - 20 - mobileHeightAdjustment, // Position higher on mobile
+			x: 100 - startWidth / 2,
+			y: startY,
 			width: startWidth,
 			height: startHeight,
-			imageType: 1, // Use iceberg1 for starting platform
+			imageType: 1,
 		});
-
 		// Generate more icebergs with guaranteed reachability and more spacing
+		let lastY = startY;
 		for (let i = 1; i < 5; i++) {
-			// Increased spacing for larger icebergs
-			this.generateIceberg(50 + 250 * i); // 250 pixel spacing for more breathing room
+			lastY = this.generateIceberg(50 + 250 * i, lastY); // Pass lastY for consistent placement
 		}
 	}
 
@@ -565,7 +584,7 @@ class PenguinGlider {
 		}
 	}
 
-	generateIceberg(startX) {
+	generateIceberg(startX, lastIcebergY) {
 		// Calculate penguin's maximum jump capabilities
 		// Jump power: -15, gravity: 0.5 (updated for current physics)
 		// Time to reach peak: 15/0.5 = 30 frames, total air time: 60 frames
@@ -573,27 +592,16 @@ class PenguinGlider {
 		// Maximum horizontal distance with gliding: 60 * 4 = 240 pixels
 		// Safe maximum distance: 300 pixels to account for different jump trajectories
 
-		const maxHorizontalReach = 300; // Increased for larger spacing
-		const maxVerticalReach = 150; // Increased for larger icebergs
-
-		// Ensure iceberg is within reachable distance with more variation
-		const horizontalDistance = Math.random() * (maxHorizontalReach * 0.8) + maxHorizontalReach * 0.2; // 20-100% of max reach
-
-		// Calculate vertical position based on reachability
-		// Find the last iceberg to calculate relative positioning
-		const lastIceberg = this.icebergs[this.icebergs.length - 1];
-		const lastIcebergTop = lastIceberg ? lastIceberg.y : this.waterLevel - 60;
-
-		// Keep generated icebergs at similar height to first iceberg with tight variation (scaled for mobile)
-		const baseMinOffset = 380 * this.mobileScaleFactor;
-		const baseMaxOffset = 340 * this.mobileScaleFactor;
-		// On mobile, move icebergs higher by reducing the offset from water level
-		const mobileHeightAdjustment = this.isMobile ? 50 : 0; // Move 50px higher on mobile (reduced from 100px)
-		const minY = Math.max(
-			this.waterLevel - baseMinOffset - mobileHeightAdjustment,
-			lastIcebergTop - maxVerticalReach
-		);
-		const maxY = Math.min(this.waterLevel - baseMaxOffset - mobileHeightAdjustment, lastIcebergTop + 60);
+		const maxHorizontalReach = 300;
+		const horizontalDistance = Math.random() * (maxHorizontalReach * 0.8) + maxHorizontalReach * 0.2;
+		// Use lastIcebergY if provided, else fallback to previous iceberg or waterLevel
+		let prevY =
+			typeof lastIcebergY === "number"
+				? lastIcebergY
+				: this.icebergs.length > 0
+				? this.icebergs[this.icebergs.length - 1].y
+				: this.waterLevel - 60;
+		const { minY, maxY } = this.getIcebergYRange(prevY);
 
 		// Generate iceberg with image-based dimensions if available
 		const imageType = Math.floor(Math.random() * 4) + 1;
@@ -659,6 +667,7 @@ class PenguinGlider {
 		};
 
 		this.icebergs.push(iceberg);
+		return newIcebergY;
 	}
 
 	generateSnowflakes() {
@@ -886,41 +895,27 @@ class PenguinGlider {
 
 	spawnFish() {
 		// Calculate reachable height range based on penguin physics
-		// Penguin can jump ~144px high with jump power -12 and gravity 0.5
 		const maxJumpHeight = (this.jumpPower * this.jumpPower) / (2 * this.gravity);
-
-		// Get the average iceberg height (updated to match current iceberg positioning, scaled for mobile)
-		const mobileHeightAdjustment = this.isMobile ? 50 : 0; // Match the height adjustment (reduced from 100px)
-		const avgIcebergY = this.waterLevel - 360 * this.mobileScaleFactor - mobileHeightAdjustment; // Apply mobile scaling and height adjustment
-
-		// 70% chance to spawn fish at easily reachable heights
-		// 30% chance to spawn fish that require good timing/gliding
-		const easyReach = Math.random() < 0.7;
-
-		let fishY;
-		if (easyReach) {
-			// Spawn fish at heights easily reachable from icebergs
-			const minY = avgIcebergY - maxJumpHeight * 0.6; // 60% of max jump
-			const maxY = avgIcebergY - 30; // Just above icebergs
-			fishY = minY + Math.random() * (maxY - minY);
+		// Use the average y of the last 3 icebergs for more dynamic fish placement
+		let avgIcebergY = 0;
+		if (this.icebergs.length > 0) {
+			const count = Math.min(3, this.icebergs.length);
+			avgIcebergY = this.icebergs.slice(-count).reduce((sum, ib) => sum + ib.y, 0) / count;
 		} else {
-			// Spawn fish that require more skill to reach
-			const minY = Math.max(50, avgIcebergY - maxJumpHeight * 0.9); // 90% of max jump
-			const maxY = avgIcebergY - maxJumpHeight * 0.6; // 60% of max jump
-			fishY = minY + Math.random() * (maxY - minY);
+			const mobileHeightAdjustment = this.isMobile ? 50 : 0;
+			avgIcebergY = this.waterLevel - 360 * this.mobileScaleFactor - mobileHeightAdjustment;
 		}
-
-		// Ensure fish is always above water and below top of screen
-		fishY = Math.max(50, Math.min(fishY, this.waterLevel - 100));
-
+		// Always spawn fish above icebergs, within a reasonable jump range
+		const { minY, maxY } = this.getFishYRange(avgIcebergY, maxJumpHeight);
+		const fishY = minY + Math.random() * (maxY - minY);
 		const fish = {
-			x: this.camera.x + this.canvas.width + 50, // Spawn ahead of camera view
+			x: this.camera.x + this.canvas.width + 50,
 			y: fishY,
 			width: 40,
 			height: 24,
 			animationTimer: 0,
 			collected: false,
-			imageType: Math.floor(Math.random() * 4) + 1, // Random fish type 1-4
+			imageType: Math.floor(Math.random() * 4) + 1,
 		};
 		this.fish.push(fish);
 	}
@@ -1390,40 +1385,37 @@ class PenguinGlider {
 		// Draw penguin
 		this.drawPenguin();
 
-		// Draw infinite water in foreground with proper tiling
+		// Draw infinite water in foreground, tiled from waterLevel down to bottom of canvas
 		if (this.imagesReady && this.images.water) {
-			// Draw repeating water texture using natural image dimensions with reduced opacity
-			this.ctx.globalAlpha = 0.4; // Reduce opacity to 40%
+			this.ctx.globalAlpha = 0.4;
 			const waterImage = this.images.water;
 			const waterWidth = waterImage.naturalWidth;
 			const waterHeight = waterImage.naturalHeight;
-
-			// Calculate render bounds with buffer for infinite scrolling
 			const renderBuffer = this.canvas.width;
 			const leftBound = this.camera.x - this.canvas.width - renderBuffer;
 			const rightBound = this.camera.x + this.canvas.width + renderBuffer;
-			const topBound = this.waterLevel;
-			const bottomBound = this.waterLevel + this.canvas.height + renderBuffer;
-
-			// Calculate tile positions for seamless infinite tiling
 			const startTileX = Math.floor(leftBound / waterWidth);
 			const endTileX = Math.ceil(rightBound / waterWidth);
-			// Always align the bottom edge of a water tile with half the water level (image above waterLevel / 2)
-			// Find the first tileY so that y + waterHeight = this.waterLevel / 2
-			const halfWaterLevel = this.waterLevel * 2 + 40;
-			const firstTileY = Math.floor((halfWaterLevel - waterHeight) / waterHeight);
-			const startTileY = firstTileY;
-			// Only draw a single row of water tiles at the correct Y position
-			const y = halfWaterLevel - waterHeight;
+			// Store the y-offset only once, when the first iceberg exists and offset is not set
+			if (this.waterImageYOffset === null && this.icebergs && this.icebergs.length > 0) {
+				const firstIceberg = this.icebergs[0];
+				this.waterImageYOffset = firstIceberg.y + 50 - this.waterLevel;
+			}
+			let yOffset = this.waterImageYOffset !== null ? this.waterImageYOffset : 0;
 			for (let tileX = startTileX; tileX <= endTileX; tileX++) {
 				const x = tileX * waterWidth;
-				this.ctx.drawImage(waterImage, x, y, waterWidth, waterHeight);
+				for (
+					let y = this.waterLevel + yOffset;
+					y < this.camera.y + this.canvas.height + renderBuffer;
+					y += waterHeight
+				) {
+					this.ctx.drawImage(waterImage, x, y, waterWidth, waterHeight);
+				}
 			}
-			this.ctx.globalAlpha = 1; // Reset opacity
+			this.ctx.globalAlpha = 1;
 		} else {
-			// Fallback: infinite solid color water
 			this.ctx.globalAlpha = 0.4;
-			this.ctx.fillStyle = "#0F1F4A"; // Darker water to match sky
+			this.ctx.fillStyle = "#0F1F4A";
 			const renderBuffer = this.canvas.width * 2;
 			this.ctx.fillRect(
 				this.camera.x - this.canvas.width - renderBuffer,
@@ -1431,7 +1423,42 @@ class PenguinGlider {
 				this.canvas.width + renderBuffer * 2,
 				this.canvas.height + renderBuffer
 			);
-			this.ctx.globalAlpha = 1; // Reset opacity
+			this.ctx.globalAlpha = 1;
+		}
+
+		// Draw infinite water waves in foreground, always aligned to waterLevel
+		if (this.imagesReady && this.images.waves) {
+			const waveHeight = 30;
+			const waveAspect = this.images.waves.naturalWidth / this.images.waves.naturalHeight;
+			const waveWidth = waveHeight * waveAspect;
+			const renderBuffer = this.canvas.width;
+			const leftBound = this.camera.x - renderBuffer;
+			const rightBound = this.camera.x + this.canvas.width + renderBuffer;
+			const startTile = Math.floor(leftBound / waveWidth);
+			const endTile = Math.ceil(rightBound / waveWidth);
+			for (let tile = startTile; tile <= endTile; tile++) {
+				const x = tile * waveWidth;
+				const waveY = this.waterLevel + Math.sin((x + Date.now() * 0.001) * 0.01) * 5;
+				this.drawImagePreserveAspect(this.images.waves, x, waveY, waveWidth, waveHeight, "center");
+			}
+		} else {
+			this.ctx.strokeStyle = "#36648B";
+			this.ctx.lineWidth = 3;
+			this.ctx.beginPath();
+			const renderBuffer = this.canvas.width * 2;
+			const waveStart = this.camera.x - renderBuffer;
+			const waveEnd = this.camera.x + this.canvas.width + renderBuffer;
+			let firstPoint = true;
+			for (let x = waveStart; x < waveEnd; x += 20) {
+				const y = this.waterLevel + Math.sin(x + Date.now() * 0.005) * 3;
+				if (firstPoint) {
+					this.ctx.moveTo(x, y);
+					firstPoint = false;
+				} else {
+					this.ctx.lineTo(x, y);
+				}
+			}
+			this.ctx.stroke();
 		}
 
 		// Draw infinite water waves in foreground
