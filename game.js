@@ -1396,16 +1396,16 @@ class PenguinGlider {
 			// Calculate tile positions for seamless infinite tiling
 			const startTileX = Math.floor(leftBound / waterWidth);
 			const endTileX = Math.ceil(rightBound / waterWidth);
-			const startTileY = Math.floor(topBound / waterHeight);
-			const endTileY = Math.ceil(bottomBound / waterHeight);
-
-			// Tile the water image to fill the area infinitely
+			// Always align the bottom edge of a water tile with half the water level (image above waterLevel / 2)
+			// Find the first tileY so that y + waterHeight = this.waterLevel / 2
+			const halfWaterLevel = this.waterLevel * 2 + 40;
+			const firstTileY = Math.floor((halfWaterLevel - waterHeight) / waterHeight);
+			const startTileY = firstTileY;
+			// Only draw a single row of water tiles at the correct Y position
+			const y = halfWaterLevel - waterHeight;
 			for (let tileX = startTileX; tileX <= endTileX; tileX++) {
-				for (let tileY = startTileY; tileY <= endTileY; tileY++) {
-					const x = tileX * waterWidth;
-					const y = tileY * waterHeight;
-					this.ctx.drawImage(waterImage, x, y, waterWidth, waterHeight);
-				}
+				const x = tileX * waterWidth;
+				this.ctx.drawImage(waterImage, x, y, waterWidth, waterHeight);
 			}
 			this.ctx.globalAlpha = 1; // Reset opacity
 		} else {
