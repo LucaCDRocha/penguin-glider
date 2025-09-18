@@ -2,7 +2,7 @@
 class PenguinGlider {
 	constructor() {
 		// Debug settings
-		this.showHitboxes = false; // Set to true to show collision hitboxes
+		this.showHitboxes = true; // Set to true to show collision hitboxes
 
 		this.canvas = document.getElementById("gameCanvas");
 		this.ctx = this.canvas.getContext("2d");
@@ -430,8 +430,20 @@ class PenguinGlider {
 
 	setupEventListeners() {
 		// Keyboard controls
+
 		document.addEventListener("keydown", (e) => {
 			this.keys[e.code] = true;
+			// If game over screen is visible and Enter is pressed, restart
+			if (
+				this.gameState === "gameOver" &&
+				(e.code === "Enter" || e.key === "Enter") &&
+				this.gameOverElement &&
+				this.gameOverElement.style.display === "block"
+			) {
+				if (typeof restartGame === "function") {
+					restartGame();
+				}
+			}
 			e.preventDefault();
 		});
 
