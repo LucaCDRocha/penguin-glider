@@ -433,6 +433,135 @@
 				opacity: 0.8;
 				white-space: nowrap;
 			}
+
+			/* Mobile specific positioning for timer and score below progress bar */
+			@media (hover: none) and (pointer: coarse) {
+				#gameTimer {
+					top: calc(max(20px, env(safe-area-inset-top, 20px)) + 80px) !important;
+					left: 20px !important;
+				}
+
+				/* Target the dynamically created score container */
+				#gameScore {
+					top: calc(max(20px, env(safe-area-inset-top, 20px)) + 80px) !important;
+				}
+
+				.top-ui {
+					position: fixed !important;
+					top: calc(max(20px, env(safe-area-inset-top, 20px)) + 80px) !important;
+					right: 20px !important;
+					left: auto !important;
+					width: auto !important;
+					padding: 0 !important;
+					margin: 0 !important;
+				}
+
+				.score {
+					margin: 0 !important;
+				}
+
+				.instructions {
+					display: none !important;
+				}
+			}
+
+			@media (max-width: 768px) {
+				#gameTimer {
+					top: calc(max(20px, env(safe-area-inset-top, 20px)) + 80px) !important;
+					left: 20px !important;
+				}
+
+				/* Target the dynamically created score container */
+				#gameScore {
+					top: calc(max(20px, env(safe-area-inset-top, 20px)) + 80px) !important;
+				}
+
+				.top-ui {
+					position: fixed !important;
+					top: calc(max(20px, env(safe-area-inset-top, 20px)) + 80px) !important;
+					right: 20px !important;
+					left: auto !important;
+					width: auto !important;
+					padding: 0 !important;
+					margin: 0 !important;
+				}
+
+				.score {
+					margin: 0 !important;
+				}
+
+				.instructions {
+					display: none !important;
+				}
+			}
+
+			/* Very small screens adjustments */
+			@media (max-width: 480px) {
+				#gameTimer {
+					top: calc(max(20px, env(safe-area-inset-top, 20px)) + 70px) !important;
+					left: 15px !important;
+					font-size: clamp(28px, 5vw, 36px) !important;
+				}
+
+				/* Target the dynamically created score container */
+				#gameScore {
+					top: calc(max(20px, env(safe-area-inset-top, 20px)) + 70px) !important;
+					right: 15px !important;
+				}
+
+				.top-ui {
+					position: fixed !important;
+					top: calc(max(20px, env(safe-area-inset-top, 20px)) + 70px) !important;
+					right: 15px !important;
+					left: auto !important;
+					width: auto !important;
+					padding: 0 !important;
+					margin: 0 !important;
+				}
+
+				.score {
+					margin: 0 !important;
+					font-size: clamp(20px, 5vw, 28px) !important;
+				}
+
+				.instructions {
+					display: none !important;
+				}
+			}
+
+			/* Landscape orientation on mobile */
+			@media (max-height: 500px) and (orientation: landscape) {
+				#gameTimer {
+					top: calc(max(20px, env(safe-area-inset-top, 20px)) + 60px) !important;
+					left: 15px !important;
+					font-size: clamp(24px, 4vw, 32px) !important;
+				}
+
+				/* Target the dynamically created score container */
+				#gameScore {
+					top: calc(max(20px, env(safe-area-inset-top, 20px)) + 60px) !important;
+					right: 15px !important;
+				}
+
+				.top-ui {
+					position: fixed !important;
+					top: calc(max(20px, env(safe-area-inset-top, 20px)) + 60px) !important;
+					right: 15px !important;
+					left: auto !important;
+					width: auto !important;
+					padding: 0 !important;
+					margin: 0 !important;
+				}
+
+				.score {
+					margin: 0 !important;
+					font-size: clamp(18px, 4vw, 24px) !important;
+				}
+
+				.instructions {
+					display: none !important;
+				}
+			}
 		</style>
 	</head>
 	<body>

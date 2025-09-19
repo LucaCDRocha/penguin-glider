@@ -1522,6 +1522,7 @@ class PenguinGlider {
 	createScoreDisplay() {
 		// Create container for score display
 		this.scoreContainer = document.createElement("div");
+		this.scoreContainer.id = "gameScore"; // Add ID for easier CSS targeting
 		this.scoreContainer.style.position = "fixed";
 		this.scoreContainer.style.top = "max(20px, env(safe-area-inset-top, 20px))";
 		this.scoreContainer.style.right = "20px";
