@@ -64,6 +64,9 @@ class PenguinGlider {
 		this.particles = [];
 		this.snowflakes = [];
 
+		// Moving water waves for visual effect
+		this.waves = [];
+
 		// Camera system for scrolling environment
 		this.camera = {
 			x: 0,
@@ -107,11 +110,19 @@ class PenguinGlider {
 		this.sounds = {};
 		this.glideTimer = 0;
 
-		// Background music system
+		// Background music system - using MP3 file
 		this.backgroundMusic = null;
 		this.musicKeyPressed = false; // Track M key press state
-		if (typeof BackgroundMusic !== "undefined") {
-			this.backgroundMusic = new BackgroundMusic();
+		
+		// Create HTML5 Audio element for music.mp3
+		try {
+			this.backgroundMusic = new Audio('music.mp3');
+			this.backgroundMusic.loop = true; // Loop the music
+			this.backgroundMusic.volume = 0.3; // Set volume (0.0 to 1.0)
+			this.backgroundMusic.preload = 'auto'; // Preload the audio
+			console.log("MP3 background music loaded successfully");
+		} catch (error) {
+			console.warn("Failed to load background music:", error);
 		}
 
 		// Image loading system
@@ -805,6 +816,7 @@ class PenguinGlider {
 		this.updateBottles(deltaMultiplier);
 		this.updateParticles(deltaMultiplier);
 		this.updateSnowflakes(deltaMultiplier);
+		this.updateWaves(deltaMultiplier);
 		this.checkCollisions();
 		this.checkFishCollection();
 		this.checkBottleCollection();
@@ -1367,6 +1379,47 @@ class PenguinGlider {
 		}
 	}
 
+	updateWaves(deltaMultiplier = 1) {
+		// More frequent wave spawning in the lower half of visible screen only
+		if (Math.random() < 0.05) { // Increased frequency from 0.02 to 0.05
+			// Calculate lower half of visible screen in world coordinates
+			const lowerHalfStart = this.camera.y + (this.canvas.height / 2);
+			
+			this.waves.push({
+				x: this.camera.x + Math.random() * this.canvas.width, // Spawn only in visible screen width
+				y: lowerHalfStart + Math.random() * (this.canvas.height / 2),
+				speedX: (Math.random() - 0.5) * 0.4, // Gentle horizontal drift
+				speedY: (Math.random() - 0.5) * 1.2, // More active up/down movement
+				alpha: 0.4 + Math.random() * 0.4,
+				life: 1.0,
+				scale: 0.3 + Math.random() * 0.4, // Keep smaller size
+				wobbleSpeed: Math.random() * 0.3 + 0.15, // Faster wobbling (3x faster)
+				wobbleAmount: Math.random() * 1.2 + 0.4 // More intense wobble
+			});
+		}
+
+		// Update existing waves with faster on-the-spot movement
+		for (let i = this.waves.length - 1; i >= 0; i--) {
+			const wave = this.waves[i];
+			
+			// Basic movement
+			wave.x += wave.speedX * deltaMultiplier;
+			wave.y += wave.speedY * deltaMultiplier;
+			
+			// Add faster wobbling motion on the spot
+			const time = Date.now() * 0.005; // Faster time multiplier
+			wave.x += Math.sin(time * wave.wobbleSpeed) * wave.wobbleAmount * deltaMultiplier;
+			wave.y += Math.cos(time * wave.wobbleSpeed * 1.3) * wave.wobbleAmount * deltaMultiplier;
+			
+			wave.life -= 0.002 * deltaMultiplier;
+
+			// Remove waves that are too old or have moved too far from visible area
+			if (wave.life <= 0 || Math.abs(wave.x - this.camera.x) > this.canvas.width * 1.5) {
+				this.waves.splice(i, 1);
+			}
+		}
+	}
+
 	validatePenguinPosition() {
 		// Safety function to ensure penguin is never stuck inside an iceberg
 		// Use larger margins to be less sensitive and reduce shakiness
@@ -1917,8 +1970,8 @@ class PenguinGlider {
 		this.progressBabyIcon.src = "img/penguin-baby.png";
 
 		this.progressBabyIcon.className = "progress-baby-penguin"; // Add class for CSS targeting
-		this.progressBabyIcon.style.width = "50px";
-		this.progressBabyIcon.style.height = "50px";
+		this.progressBabyIcon.style.width = "60px";
+		this.progressBabyIcon.style.height = "60px";
 
 		this.progressBabyIcon.style.objectFit = "contain";
 		this.progressBabyIcon.style.flexShrink = "0";
@@ -2181,9 +2234,15 @@ class PenguinGlider {
 		this.scoreContainer.style.display = "block";
 		this.progressSystemContainer.style.display = "block";
 
-		// Recreate background music instance fresh
-		if (typeof BackgroundMusic !== "undefined") {
-			this.backgroundMusic = new BackgroundMusic();
+		// Recreate MP3 background music instance fresh
+		try {
+			this.backgroundMusic = new Audio('music.mp3');
+			this.backgroundMusic.loop = true;
+			this.backgroundMusic.volume = 0.3;
+			this.backgroundMusic.preload = 'auto';
+			console.log("MP3 background music recreated for restart");
+		} catch (error) {
+			console.warn("Failed to recreate background music:", error);
 		}
 
 		// Start background music after everything is set up (longer delay to ensure cleanup is complete)
@@ -2269,7 +2328,7 @@ class PenguinGlider {
 		if (this.imagesReady && this.images.moutain) {
 			// Draw repeating mountain background with parallax effect
 			const mountainDistance = Math.min(500, this.canvas.height * 0.6);
-			const mountainHeight = Math.min(225, this.canvas.height * 0.25);
+			const mountainHeight = Math.min(225, this.canvas.height * 0.8);
 			const parallaxSpeed = 0.3; // Mountains move slower than camera for depth effect
 			const parallaxX = this.camera.x * parallaxSpeed;
 
@@ -2301,7 +2360,23 @@ class PenguinGlider {
 				// Use the stored Y position if available, otherwise use default calculation
 				const mountainY =
 					this.mountainImageYOffset !== null ? this.mountainImageYOffset : this.waterLevel - mountainDistance;
+				
+				// Draw the mountain image first
 				this.drawImagePreserveAspect(this.images.moutain, x, mountainY, mountainWidth, mountainHeight, "top");
+				
+				// Add fade overlay at the base of the mountain to blend with background gradient
+				const fadeHeight = mountainHeight * 0.3; // Fade the bottom 30% of the mountain
+				const fadeStartY = mountainY + mountainHeight - fadeHeight;
+				
+				// Create fade gradient that matches the background gradient colors
+				const fadeGradient = this.ctx.createLinearGradient(0, fadeStartY, 0, mountainY + mountainHeight);
+				fadeGradient.addColorStop(0, "rgba(15, 31, 74, 0)"); // Transparent at top of fade
+				fadeGradient.addColorStop(0.5, "rgba(15, 31, 74, 0.3)"); // Semi-transparent middle
+				fadeGradient.addColorStop(1, "rgba(15, 31, 74, 0.7)"); // More opaque at bottom matching background
+				
+				// Apply the fade overlay
+				this.ctx.fillStyle = fadeGradient;
+				this.ctx.fillRect(x, fadeStartY, mountainWidth, fadeHeight);
 			}
 		}
 
@@ -2458,6 +2533,23 @@ class PenguinGlider {
 			this.ctx.globalAlpha = 1;
 		}
 
+		// Draw moving waves on water surface
+		if (this.imagesReady && this.images.waves) {
+			const waveImage = this.images.waves;
+			const baseSize = Math.min(waveImage.naturalWidth, waveImage.naturalHeight) * 0.6;
+			for (const wave of this.waves) {
+				this.ctx.globalAlpha = wave.alpha * wave.life;
+				const waveSize = baseSize * (wave.scale || 1.0);
+				this.ctx.drawImage(
+					waveImage,
+					wave.x - this.camera.x - waveSize / 2,
+					wave.y - this.camera.y - waveSize / 2,
+					waveSize,
+					waveSize
+				);
+			}
+			this.ctx.globalAlpha = 1;
+		}
 		// Draw final iceberg in foreground (on top of everything else including water)
 		for (let iceberg of this.icebergs) {
 			if (iceberg.isFinalIceberg && this.imagesReady && this.images["end-level"]) {
@@ -2787,11 +2879,21 @@ class PenguinGlider {
 		}
 
 		try {
-			console.log("Starting background music, current playing state:", this.backgroundMusic.playing);
-			await this.backgroundMusic.start();
-			console.log("Background music start completed");
+			console.log("Starting MP3 background music, current paused state:", this.backgroundMusic.paused);
+			
+			// Reset to beginning if ended
+			if (this.backgroundMusic.ended) {
+				this.backgroundMusic.currentTime = 0;
+			}
+			
+			await this.backgroundMusic.play();
+			console.log("MP3 background music started successfully");
 		} catch (error) {
 			console.error("Failed to start background music:", error);
+			// Handle autoplay policy restrictions
+			if (error.name === 'NotAllowedError') {
+				console.log("Autoplay blocked by browser - music will start on user interaction");
+			}
 		}
 	}
 
@@ -2800,9 +2902,10 @@ class PenguinGlider {
 
 		if (this.backgroundMusic) {
 			try {
-				console.log("Stopping background music");
-				this.backgroundMusic.stop();
-				console.log("Background music stop completed");
+				console.log("Stopping MP3 background music");
+				this.backgroundMusic.pause();
+				this.backgroundMusic.currentTime = 0; // Reset to beginning
+				console.log("MP3 background music stopped successfully");
 			} catch (error) {
 				console.warn("Error stopping background music:", error);
 			}
@@ -2810,16 +2913,33 @@ class PenguinGlider {
 	}
 
 	stopBackgroundMusicWithFade() {
-		if (this.backgroundMusic && this.backgroundMusic.playing) {
-			console.log("Stopping background music with fade");
-			this.backgroundMusic.fadeOut(1); // 1 second fade out for game over/win
+		if (this.backgroundMusic && !this.backgroundMusic.paused) {
+			console.log("Stopping MP3 background music with fade");
+			
+			// Create fade out effect
+			const fadeDuration = 1000; // 1 second
+			const fadeSteps = 20;
+			const stepTime = fadeDuration / fadeSteps;
+			const volumeStep = this.backgroundMusic.volume / fadeSteps;
+			
+			const fadeInterval = setInterval(() => {
+				if (this.backgroundMusic.volume > volumeStep) {
+					this.backgroundMusic.volume -= volumeStep;
+				} else {
+					this.backgroundMusic.volume = 0;
+					this.backgroundMusic.pause();
+					clearInterval(fadeInterval);
+					// Reset volume for next play
+					this.backgroundMusic.volume = 0.3;
+				}
+			}, stepTime);
 		}
 	}
 
 	// Toggle background music on/off
 	toggleBackgroundMusic() {
 		if (this.backgroundMusic) {
-			if (this.backgroundMusic.playing) {
+			if (!this.backgroundMusic.paused) {
 				this.stopBackgroundMusic();
 			} else {
 				this.startBackgroundMusic();
