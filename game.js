@@ -113,13 +113,13 @@ class PenguinGlider {
 		// Background music system - using MP3 file
 		this.backgroundMusic = null;
 		this.musicKeyPressed = false; // Track M key press state
-		
+
 		// Create HTML5 Audio element for music.mp3
 		try {
-			this.backgroundMusic = new Audio('music.mp3');
+			this.backgroundMusic = new Audio("music.mp3");
 			this.backgroundMusic.loop = true; // Loop the music
-			this.backgroundMusic.volume = 0.3; // Set volume (0.0 to 1.0)
-			this.backgroundMusic.preload = 'auto'; // Preload the audio
+			this.backgroundMusic.volume = 0.2; // Set volume (0.0 to 1.0) - Lower volume
+			this.backgroundMusic.preload = "auto"; // Preload the audio
 			console.log("MP3 background music loaded successfully");
 		} catch (error) {
 			console.warn("Failed to load background music:", error);
@@ -1381,10 +1381,11 @@ class PenguinGlider {
 
 	updateWaves(deltaMultiplier = 1) {
 		// More frequent wave spawning in the lower half of visible screen only
-		if (Math.random() < 0.05) { // Increased frequency from 0.02 to 0.05
+		if (Math.random() < 0.05) {
+			// Increased frequency from 0.02 to 0.05
 			// Calculate lower half of visible screen in world coordinates
-			const lowerHalfStart = this.camera.y + (this.canvas.height / 2);
-			
+			const lowerHalfStart = this.camera.y + this.canvas.height / 2;
+
 			this.waves.push({
 				x: this.camera.x + Math.random() * this.canvas.width, // Spawn only in visible screen width
 				y: lowerHalfStart + Math.random() * (this.canvas.height / 2),
@@ -1394,23 +1395,23 @@ class PenguinGlider {
 				life: 1.0,
 				scale: 0.3 + Math.random() * 0.4, // Keep smaller size
 				wobbleSpeed: Math.random() * 0.3 + 0.15, // Faster wobbling (3x faster)
-				wobbleAmount: Math.random() * 1.2 + 0.4 // More intense wobble
+				wobbleAmount: Math.random() * 1.2 + 0.4, // More intense wobble
 			});
 		}
 
 		// Update existing waves with faster on-the-spot movement
 		for (let i = this.waves.length - 1; i >= 0; i--) {
 			const wave = this.waves[i];
-			
+
 			// Basic movement
 			wave.x += wave.speedX * deltaMultiplier;
 			wave.y += wave.speedY * deltaMultiplier;
-			
+
 			// Add faster wobbling motion on the spot
 			const time = Date.now() * 0.005; // Faster time multiplier
 			wave.x += Math.sin(time * wave.wobbleSpeed) * wave.wobbleAmount * deltaMultiplier;
 			wave.y += Math.cos(time * wave.wobbleSpeed * 1.3) * wave.wobbleAmount * deltaMultiplier;
-			
+
 			wave.life -= 0.002 * deltaMultiplier;
 
 			// Remove waves that are too old or have moved too far from visible area
@@ -2149,11 +2150,45 @@ class PenguinGlider {
 	}
 
 	restart() {
-		// Stop and clean up any existing background music
+		// Stop and clean up any existing background music completely
+		console.log("Restart: Stopping background music");
 		this.stopBackgroundMusic();
 
-		// Completely destroy and recreate the music instance to avoid any state issues
-		this.backgroundMusic = null;
+		// Clear any fade intervals
+		if (this.fadeInterval) {
+			clearInterval(this.fadeInterval);
+			this.fadeInterval = null;
+		}
+
+		// Wait a moment for audio to properly stop, then completely recreate
+		setTimeout(() => {
+			// Completely destroy and recreate the music instance to avoid any state issues
+			if (this.backgroundMusic) {
+				this.backgroundMusic.src = ""; // Clear source
+				this.backgroundMusic.load(); // Reset the element
+			}
+			this.backgroundMusic = null;
+
+			// Recreate MP3 background music instance fresh
+			try {
+				this.backgroundMusic = new Audio("music.mp3");
+				this.backgroundMusic.loop = true;
+				this.backgroundMusic.volume = 0.2; // Lower volume
+				this.backgroundMusic.preload = "auto";
+				console.log("MP3 background music recreated for restart");
+
+				// Start background music after a brief delay
+				setTimeout(async () => {
+					try {
+						await this.startBackgroundMusic();
+					} catch (error) {
+						console.warn("Failed to start background music after restart:", error);
+					}
+				}, 100);
+			} catch (error) {
+				console.warn("Failed to recreate background music:", error);
+			}
+		}, 100);
 
 		// Clean up existing UI elements to prevent duplicates
 		if (this.scoreContainer && this.scoreContainer.parentNode) {
@@ -2233,22 +2268,6 @@ class PenguinGlider {
 		this.updateScoreDisplay();
 		this.scoreContainer.style.display = "block";
 		this.progressSystemContainer.style.display = "block";
-
-		// Recreate MP3 background music instance fresh
-		try {
-			this.backgroundMusic = new Audio('music.mp3');
-			this.backgroundMusic.loop = true;
-			this.backgroundMusic.volume = 0.3;
-			this.backgroundMusic.preload = 'auto';
-			console.log("MP3 background music recreated for restart");
-		} catch (error) {
-			console.warn("Failed to recreate background music:", error);
-		}
-
-		// Start background music after everything is set up (longer delay to ensure cleanup is complete)
-		setTimeout(async () => {
-			await this.startBackgroundMusic();
-		}, 300);
 	}
 
 	render() {
@@ -2360,20 +2379,20 @@ class PenguinGlider {
 				// Use the stored Y position if available, otherwise use default calculation
 				const mountainY =
 					this.mountainImageYOffset !== null ? this.mountainImageYOffset : this.waterLevel - mountainDistance;
-				
+
 				// Draw the mountain image first
 				this.drawImagePreserveAspect(this.images.moutain, x, mountainY, mountainWidth, mountainHeight, "top");
-				
+
 				// Add fade overlay at the base of the mountain to blend with background gradient
 				const fadeHeight = mountainHeight * 0.3; // Fade the bottom 30% of the mountain
 				const fadeStartY = mountainY + mountainHeight - fadeHeight;
-				
+
 				// Create fade gradient that matches the background gradient colors
 				const fadeGradient = this.ctx.createLinearGradient(0, fadeStartY, 0, mountainY + mountainHeight);
 				fadeGradient.addColorStop(0, "rgba(15, 31, 74, 0)"); // Transparent at top of fade
 				fadeGradient.addColorStop(0.5, "rgba(15, 31, 74, 0.3)"); // Semi-transparent middle
 				fadeGradient.addColorStop(1, "rgba(15, 31, 74, 0.7)"); // More opaque at bottom matching background
-				
+
 				// Apply the fade overlay
 				this.ctx.fillStyle = fadeGradient;
 				this.ctx.fillRect(x, fadeStartY, mountainWidth, fadeHeight);
@@ -2880,19 +2899,33 @@ class PenguinGlider {
 
 		try {
 			console.log("Starting MP3 background music, current paused state:", this.backgroundMusic.paused);
-			
-			// Reset to beginning if ended
-			if (this.backgroundMusic.ended) {
+
+			// Reset to beginning if ended or at end
+			if (this.backgroundMusic.ended || this.backgroundMusic.currentTime >= this.backgroundMusic.duration) {
 				this.backgroundMusic.currentTime = 0;
 			}
-			
+
+			// Ensure volume is set correctly
+			this.backgroundMusic.volume = 0.2; // Lower volume
+
+			// Clear any fade intervals that might be running
+			if (this.musicFadeInterval) {
+				clearInterval(this.musicFadeInterval);
+				this.musicFadeInterval = null;
+			}
+
 			await this.backgroundMusic.play();
 			console.log("MP3 background music started successfully");
 		} catch (error) {
 			console.error("Failed to start background music:", error);
 			// Handle autoplay policy restrictions
-			if (error.name === 'NotAllowedError') {
+			if (error.name === "NotAllowedError") {
 				console.log("Autoplay blocked by browser - music will start on user interaction");
+			}
+			// Try to recreate the audio element if it's corrupted
+			if (error.name === "AbortError" || error.name === "InvalidStateError") {
+				console.log("Audio element corrupted, attempting to recreate...");
+				this.initBackgroundMusic();
 			}
 		}
 	}
@@ -2905,6 +2938,13 @@ class PenguinGlider {
 				console.log("Stopping MP3 background music");
 				this.backgroundMusic.pause();
 				this.backgroundMusic.currentTime = 0; // Reset to beginning
+
+				// Clear any existing event listeners to prevent memory leaks
+				this.backgroundMusic.onended = null;
+				this.backgroundMusic.onerror = null;
+				this.backgroundMusic.onloadstart = null;
+				this.backgroundMusic.oncanplay = null;
+
 				console.log("MP3 background music stopped successfully");
 			} catch (error) {
 				console.warn("Error stopping background music:", error);
@@ -2915,22 +2955,32 @@ class PenguinGlider {
 	stopBackgroundMusicWithFade() {
 		if (this.backgroundMusic && !this.backgroundMusic.paused) {
 			console.log("Stopping MP3 background music with fade");
-			
+
+			// Store original volume to restore later
+			const originalVolume = this.backgroundMusic.volume;
+
 			// Create fade out effect
 			const fadeDuration = 1000; // 1 second
 			const fadeSteps = 20;
 			const stepTime = fadeDuration / fadeSteps;
 			const volumeStep = this.backgroundMusic.volume / fadeSteps;
-			
-			const fadeInterval = setInterval(() => {
-				if (this.backgroundMusic.volume > volumeStep) {
-					this.backgroundMusic.volume -= volumeStep;
+
+			// Clear any existing fade interval
+			if (this.fadeInterval) {
+				clearInterval(this.fadeInterval);
+			}
+
+			this.fadeInterval = setInterval(() => {
+				if (this.backgroundMusic && this.backgroundMusic.volume > volumeStep) {
+					this.backgroundMusic.volume = Math.max(0, this.backgroundMusic.volume - volumeStep);
 				} else {
-					this.backgroundMusic.volume = 0;
-					this.backgroundMusic.pause();
-					clearInterval(fadeInterval);
-					// Reset volume for next play
-					this.backgroundMusic.volume = 0.3;
+					if (this.backgroundMusic) {
+						this.backgroundMusic.pause();
+						this.backgroundMusic.currentTime = 0;
+						this.backgroundMusic.volume = originalVolume; // Restore original volume
+					}
+					clearInterval(this.fadeInterval);
+					this.fadeInterval = null;
 				}
 			}, stepTime);
 		}
