@@ -505,7 +505,7 @@ class PenguinGlider {
 				this.gameState === "gameOver" &&
 				(e.code === "Enter" || e.key === "Enter") &&
 				this.gameOverElement &&
-				this.gameOverElement.style.display === "block"
+				(this.gameOverElement.style.display === "block" || this.gameOverElement.style.display === "flex")
 			) {
 				if (typeof restartGame === "function") {
 					restartGame();
@@ -1475,15 +1475,11 @@ class PenguinGlider {
 	gameOver() {
 		this.gameState = "gameOver";
 		this.stopBackgroundMusicWithFade();
-		this.gameOverElement.style.display = "block";
+		this.gameOverElement.style.display = "flex";
 
 		// Create and position the try again button image
 		const tryAgainBtn = document.createElement("img");
 		tryAgainBtn.src = "img/try-again.png";
-		tryAgainBtn.style.position = "absolute";
-		tryAgainBtn.style.left = "50%";
-		tryAgainBtn.style.top = "50%";
-		tryAgainBtn.style.transform = "translate(-50%, -50%)";
 		tryAgainBtn.style.cursor = "pointer";
 
 		// Bigger and responsive
@@ -1495,10 +1491,10 @@ class PenguinGlider {
 
 		// Hover reaction: slightly enlarge
 		tryAgainBtn.addEventListener("mouseenter", () => {
-			tryAgainBtn.style.transform = "translate(-50%, -50%) scale(1.1)";
+			tryAgainBtn.style.transform = "scale(1.1)";
 		});
 		tryAgainBtn.addEventListener("mouseleave", () => {
-			tryAgainBtn.style.transform = "translate(-50%, -50%) scale(1)";
+			tryAgainBtn.style.transform = "scale(1)";
 		});
 
 		tryAgainBtn.onclick = restartGame;
@@ -1506,20 +1502,16 @@ class PenguinGlider {
 		// Create loss reason text with timer font style
 		const lossReason = document.createElement("p");
 		lossReason.style.fontFamily = "'Share Tech Mono', monospace";
-		lossReason.style.position = "absolute";
-		lossReason.style.left = "50%";
-		lossReason.style.top = "calc(50% + 80px)";
-		lossReason.style.whiteSpace = "nowrap";
-		lossReason.style.transform = "translate(-50%, -50%)";
 		lossReason.style.fontSize = "clamp(14px, 3.5vw, 22px)";
+		lossReason.style.marginTop = "20px";
 		lossReason.textContent = this.penguin.y > this.waterLevel ? "OOOOPS you fell in the icy water!" : "TIME'S UP!";
 
 		// Clear any existing content
 		this.gameOverElement.innerHTML = "";
 
-		// Add the new elements
-		this.gameOverElement.appendChild(lossReason);
+		// Add the new elements (flexbox will center them)
 		this.gameOverElement.appendChild(tryAgainBtn);
+		this.gameOverElement.appendChild(lossReason);
 
 		this.playSound("gameOver");
 		this.timer.stop();
@@ -1530,6 +1522,7 @@ class PenguinGlider {
 	createScoreDisplay() {
 		// Create container for score display
 		this.scoreContainer = document.createElement("div");
+		this.scoreContainer.id = "gameScore"; // Add ID for easier CSS targeting
 		this.scoreContainer.style.position = "fixed";
 		this.scoreContainer.style.top = "max(20px, env(safe-area-inset-top, 20px))";
 		this.scoreContainer.style.right = "20px";
@@ -1549,6 +1542,7 @@ class PenguinGlider {
 		// Create fish icon
 		this.fishIcon = document.createElement("img");
 		this.fishIcon.src = "img/fish4.png";
+		this.fishIcon.className = "fish-icon"; // Add class for CSS targeting
 		this.fishIcon.style.height = "clamp(24px, 4vw, 32px)";
 		this.fishIcon.style.marginRight = "8px";
 
@@ -1558,6 +1552,7 @@ class PenguinGlider {
 
 		// Create message below
 		this.scoreMessage = document.createElement("div");
+		this.scoreMessage.className = "score-message"; // Add class for CSS targeting
 		this.scoreMessage.textContent = `collect at least ${this.minFishRequired}!`;
 		this.scoreMessage.style.color = "#000000";
 		this.scoreMessage.style.fontSize = "clamp(16px, 3vw, 24px)";
@@ -1590,25 +1585,27 @@ class PenguinGlider {
 	createProgressBar() {
 		// Create container for progress bar
 		this.progressBarContainer = document.createElement("div");
+		this.progressBarContainer.className = "progress-bar-container"; // Add class for CSS targeting
 		this.progressBarContainer.style.position = "fixed";
 		this.progressBarContainer.style.top = "max(20px, env(safe-area-inset-top, 20px))";
 		this.progressBarContainer.style.left = "50%";
 		this.progressBarContainer.style.transform = "translateX(-50%)";
-		this.progressBarContainer.style.width = "380px";
-		this.progressBarContainer.style.maxWidth = "75vw";
+		this.progressBarContainer.style.width = "480px";
+		this.progressBarContainer.style.maxWidth = "85vw";
 		this.progressBarContainer.style.zIndex = "10";
 		this.progressBarContainer.style.display = "flex";
 		this.progressBarContainer.style.alignItems = "center";
-		this.progressBarContainer.style.gap = "10px";
+		this.progressBarContainer.style.gap = "15px";
 
 		// Create progress bar track container (takes most of the space)
 		this.progressBarTrack = document.createElement("div");
+		this.progressBarTrack.className = "progress-bar-track"; // Add class for CSS targeting
 		this.progressBarTrack.style.position = "relative";
 		this.progressBarTrack.style.width = "100%";
-		this.progressBarTrack.style.height = "20px";
+		this.progressBarTrack.style.height = "28px";
 		this.progressBarTrack.style.backgroundColor = "rgba(255, 255, 255, 0.3)";
-		this.progressBarTrack.style.borderRadius = "10px";
-		this.progressBarTrack.style.border = "2px solid #000000";
+		this.progressBarTrack.style.borderRadius = "14px";
+		this.progressBarTrack.style.border = "3px solid #000000";
 		this.progressBarTrack.style.overflow = "visible";
 
 		// Create progress bar fill
@@ -1616,16 +1613,17 @@ class PenguinGlider {
 		this.progressBarFill.style.width = "0%";
 		this.progressBarFill.style.height = "100%";
 		this.progressBarFill.style.backgroundColor = "#4a90e2";
-		this.progressBarFill.style.borderRadius = "8px";
+		this.progressBarFill.style.borderRadius = "11px";
 		this.progressBarFill.style.transition = "width 0.3s ease";
 
 		// Create moving penguin indicator
 		this.progressPenguin = document.createElement("img");
 		this.progressPenguin.src = "img/penguin.png";
+		this.progressPenguin.className = "progress-penguin"; // Add class for CSS targeting
 		this.progressPenguin.style.position = "absolute";
-		this.progressPenguin.style.width = "28px";
-		this.progressPenguin.style.height = "28px";
-		this.progressPenguin.style.top = "-16px"; // Center on track
+		this.progressPenguin.style.width = "36px";
+		this.progressPenguin.style.height = "36px";
+		this.progressPenguin.style.top = "-20px"; // Center on track
 		this.progressPenguin.style.left = "0%";
 		this.progressPenguin.style.transition = "left 0.3s ease";
 		this.progressPenguin.style.transform = "translateX(-50%)";
@@ -1642,18 +1640,19 @@ class PenguinGlider {
 		// Create penguin-baby icon (positioned at end)
 		this.progressBabyIcon = document.createElement("img");
 		this.progressBabyIcon.src = "img/penguin-baby.png";
-		this.progressBabyIcon.style.width = "40px";
-		this.progressBabyIcon.style.height = "40px";
+		this.progressBabyIcon.className = "progress-baby-penguin"; // Add class for CSS targeting
+		this.progressBabyIcon.style.width = "50px";
+		this.progressBabyIcon.style.height = "50px";
 		this.progressBabyIcon.style.objectFit = "contain";
 		this.progressBabyIcon.style.flexShrink = "0";
 
 		// Create progress text
 		this.progressText = document.createElement("div");
 		this.progressText.style.textAlign = "center";
-		this.progressText.style.fontSize = "clamp(10px, 2vw, 14px)";
+		this.progressText.style.fontSize = "clamp(12px, 2.5vw, 16px)";
 		this.progressText.style.fontWeight = "bold";
 		this.progressText.style.color = "#000000";
-		this.progressText.style.marginTop = "4px";
+		this.progressText.style.marginTop = "6px";
 		this.progressText.style.width = "100%";
 		this.progressText.textContent = "Level Progress: 0%";
 
@@ -1722,7 +1721,84 @@ class PenguinGlider {
 		if (this.winScreenElement && this.winScoreElement && this.winTimeElement) {
 			this.winScoreElement.textContent = this.score;
 			this.winTimeElement.textContent = this.timer.formatTime(Math.ceil(this.timer.remainingTime));
-			this.winScreenElement.style.display = "block";
+
+			// Create and add the bravo image
+			const bravoImg = document.createElement("img");
+			bravoImg.src = "img/brrravoo.png";
+			bravoImg.style.width = "clamp(250px, 35vw, 400px)";
+			bravoImg.style.height = "auto";
+			bravoImg.style.marginBottom = "20px";
+
+			// Override CSS hover effects - make it non-interactive
+			bravoImg.style.cursor = "default";
+			bravoImg.style.transition = "none";
+			bravoImg.style.transform = "none";
+
+			// Add event listeners to prevent any hover scaling
+			bravoImg.addEventListener("mouseenter", (e) => {
+				e.target.style.transform = "none";
+			});
+			bravoImg.addEventListener("mouseleave", (e) => {
+				e.target.style.transform = "none";
+			});
+
+			// Clear existing content and add bravo image at the top
+			this.winScreenElement.innerHTML = "";
+			this.winScreenElement.appendChild(bravoImg);
+
+			// Add the existing win screen content
+			const winContent = document.createElement("div");
+			winContent.innerHTML = `
+				<h2>🎉 Level Complete! 🎉</h2>
+				<p>You successfully reached the end with enough fish! 🐟</p>
+				<p>Final Score: <span id="winScore">${this.score}</span> fish</p>
+				<p>Time Remaining: <span id="winTime">${this.timer.formatTime(Math.ceil(this.timer.remainingTime))}</span></p>
+			`;
+
+			// Create styled Play Again button
+			const playAgainBtn = document.createElement("button");
+			playAgainBtn.textContent = "Play Again";
+			playAgainBtn.onclick = restartGame;
+
+			// Style the button
+			playAgainBtn.style.background = "#4a90e2";
+			playAgainBtn.style.color = "white";
+			playAgainBtn.style.border = "none";
+			playAgainBtn.style.padding = "clamp(12px, 3vw, 15px) clamp(24px, 6vw, 30px)";
+			playAgainBtn.style.borderRadius = "10px";
+			playAgainBtn.style.cursor = "pointer";
+			playAgainBtn.style.fontSize = "clamp(16px, 4vw, 20px)";
+			playAgainBtn.style.fontWeight = "bold";
+			playAgainBtn.style.transition = "all 0.3s ease";
+			playAgainBtn.style.marginTop = "20px";
+			playAgainBtn.style.boxShadow = "0 4px 15px rgba(74, 144, 226, 0.4)";
+			playAgainBtn.style.fontFamily = "Arial, sans-serif";
+
+			// Hover effects
+			playAgainBtn.addEventListener("mouseenter", () => {
+				playAgainBtn.style.background = "#357abd";
+				playAgainBtn.style.transform = "scale(1.05)";
+				playAgainBtn.style.boxShadow = "0 6px 20px rgba(74, 144, 226, 0.6)";
+			});
+
+			playAgainBtn.addEventListener("mouseleave", () => {
+				playAgainBtn.style.background = "#4a90e2";
+				playAgainBtn.style.transform = "scale(1)";
+				playAgainBtn.style.boxShadow = "0 4px 15px rgba(74, 144, 226, 0.4)";
+			});
+
+			// Active state
+			playAgainBtn.addEventListener("mousedown", () => {
+				playAgainBtn.style.transform = "scale(0.95)";
+			});
+
+			playAgainBtn.addEventListener("mouseup", () => {
+				playAgainBtn.style.transform = "scale(1.05)";
+			});
+
+			winContent.appendChild(playAgainBtn);
+			this.winScreenElement.appendChild(winContent);
+			this.winScreenElement.style.display = "flex";
 		}
 	}
 

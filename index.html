@@ -102,13 +102,24 @@
 
 			.game-over {
 				position: fixed;
-				top: 50%;
-				left: 50%;
-				transform: translate(-50%, -50%);
+				top: 0;
+				left: 0;
+				width: 100vw;
+				height: 100vh;
 				text-align: center;
 				display: none;
 				z-index: 999;
 				pointer-events: auto;
+				color: #ffffff;
+				
+				/* Dark overlay background */
+				background: rgba(0, 0, 0, 0.75);
+				backdrop-filter: blur(5px);
+				
+				/* Center content */
+				flex-direction: column;
+				justify-content: center;
+				align-items: center;
 			}
 
 			.game-over img {
@@ -125,7 +136,7 @@
 
 			.game-over p {
 				font-family: "Digital-7", "LCD", monospace;
-				color: #000000;
+				color: #ffffff;
 				font-size: clamp(16px, 4vw, 24px); /* smaller & adaptable */
 				font-weight: 200;
 				text-align: center;
@@ -196,13 +207,51 @@
 				bottom: 0;
 				left: 0;
 				width: 100vw;
+				height: clamp(160px, 40vh, 220px);
 				display: none;
 				flex-direction: row;
 				justify-content: space-between;
-				align-items: center;
+				align-items: flex-end;
 				padding: max(20px, env(safe-area-inset-bottom, 20px)) 20px;
+				padding-bottom: 50px;
 				z-index: 15;
 				pointer-events: none;
+				/* Add subtle overlay background */
+				background: linear-gradient(
+					to top,
+					rgba(0, 0, 0, 0.3) 0%,
+					rgba(0, 0, 0, 0.15) 40%,
+					rgba(0, 0, 0, 0.05) 70%,
+					transparent 100%
+				);
+			}
+
+			/* Create gradient blur effect using pseudo-element */
+			.mobile-controls::before {
+				content: '';
+				position: absolute;
+				top: 0;
+				left: 0;
+				right: 0;
+				bottom: 0;
+				backdrop-filter: blur(12px);
+				-webkit-backdrop-filter: blur(12px);
+				mask: linear-gradient(
+					to top,
+					rgba(0, 0, 0, 1) 0%,
+					rgba(0, 0, 0, 0.8) 30%,
+					rgba(0, 0, 0, 0.3) 70%,
+					transparent 100%
+				);
+				-webkit-mask: linear-gradient(
+					to top,
+					rgba(0, 0, 0, 1) 0%,
+					rgba(0, 0, 0, 0.8) 30%,
+					rgba(0, 0, 0, 0.3) 70%,
+					transparent 100%
+				);
+				pointer-events: none;
+				z-index: -1;
 			}
 
 			.control-button {
@@ -237,8 +286,8 @@
 			.jump-button {
 				flex: 0 0 auto;
 				margin: 0;
-				width: clamp(90px, 30vw, 160px);
-				height: clamp(90px, 30vw, 160px);
+				flex-grow: 1;
+				/* width: 100%; */
 			}
 
 			.jump-button:active {
@@ -296,8 +345,9 @@
 				}
 
 				.mobile-controls {
-					bottom: 10px;
-					padding: 10px;
+					bottom: 0;
+					padding: max(10px, env(safe-area-inset-bottom, 10px)) 10px;
+					padding-bottom: max(40px, env(safe-area-inset-bottom, 40px));
 					gap: 0;
 				}
 
@@ -329,8 +379,9 @@
 				}
 
 				.mobile-controls {
-					bottom: 5px;
-					padding: 5px 15px;
+					bottom: 0;
+					padding: max(5px, env(safe-area-inset-bottom, 5px)) 15px;
+					padding-bottom: max(30px, env(safe-area-inset-bottom, 30px));
 				}
 
 				.control-button {
@@ -342,6 +393,329 @@
 				.jump-button {
 					min-height: clamp(45px, 10vw, 55px);
 					font-size: clamp(14px, 2.5vw, 18px);
+				}
+			}
+
+			/* Loading Circle Styles */
+			.loading-circle {
+				position: fixed;
+				width: clamp(30px, 8vw, 40px);
+				height: clamp(30px, 8vw, 40px);
+				left: 50%;
+				top: calc(50% + clamp(140px, 35vw, 180px));
+				transform: translateX(-50%);
+				z-index: 1002;
+				border: 3px solid rgba(74, 144, 226, 0.3);
+				border-left: 3px solid #4a90e2;
+				border-radius: 50%;
+				animation: spin 1s linear infinite;
+				filter: drop-shadow(0 0 12px rgba(74, 144, 226, 0.6));
+			}
+
+			@keyframes spin {
+				0% { transform: translateX(-50%) rotate(0deg); }
+				100% { transform: translateX(-50%) rotate(360deg); }
+			}
+
+			/* Loading text */
+			.loading-text {
+				position: fixed;
+				left: 50%;
+				top: calc(50% + clamp(200px, 45vw, 240px));
+				transform: translateX(-50%);
+				z-index: 1002;
+				font-family: "Segoe UI", Arial, Helvetica Neue, sans-serif;
+				font-weight: 300;
+				font-size: clamp(14px, 4vw, 16px);
+				color: #4a90e2;
+				text-align: center;
+				text-shadow: 0 2px 8px rgba(74, 144, 226, 0.4);
+				opacity: 0.8;
+				white-space: nowrap;
+			}
+
+			/* Mobile specific positioning for timer and score below progress bar */
+			@media (hover: none) and (pointer: coarse) {
+				#gameTimer {
+					top: calc(max(20px, env(safe-area-inset-top, 20px)) + 60px) !important;
+					left: 15px !important;
+					font-size: clamp(24px, 4.5vw, 32px) !important;
+				}
+
+				/* Target the dynamically created score container */
+				#gameScore {
+					top: calc(max(20px, env(safe-area-inset-top, 20px)) + 60px) !important;
+					right: 15px !important;
+				}
+
+				/* Make score elements smaller */
+				#gameScore div {
+					font-size: clamp(24px, 4.5vw, 32px) !important;
+				}
+
+				#gameScore div:last-child {
+					font-size: clamp(12px, 2.5vw, 16px) !important;
+				}
+
+				.top-ui {
+					position: fixed !important;
+					top: calc(max(20px, env(safe-area-inset-top, 20px)) + 60px) !important;
+					right: 15px !important;
+					left: auto !important;
+					width: auto !important;
+					padding: 0 !important;
+					margin: 0 !important;
+				}
+
+				.score {
+					margin: 0 !important;
+					font-size: clamp(18px, 4vw, 24px) !important;
+					padding: clamp(6px, 1.5vw, 8px) clamp(10px, 2.5vw, 12px) !important;
+				}
+
+				.instructions {
+					display: none !important;
+				}
+			}
+
+			@media (max-width: 768px) {
+				#gameTimer {
+					top: calc(max(20px, env(safe-area-inset-top, 20px)) + 60px) !important;
+					left: 15px !important;
+					font-size: clamp(24px, 4.5vw, 32px) !important;
+				}
+
+				/* Target the dynamically created score container */
+				#gameScore {
+					top: calc(max(20px, env(safe-area-inset-top, 20px)) + 60px) !important;
+					right: 15px !important;
+				}
+
+				/* Make score elements smaller */
+				#gameScore div {
+					font-size: clamp(24px, 4.5vw, 32px) !important;
+				}
+
+				#gameScore div:last-child {
+					font-size: clamp(12px, 2.5vw, 16px) !important;
+				}
+
+				.top-ui {
+					position: fixed !important;
+					top: calc(max(20px, env(safe-area-inset-top, 20px)) + 60px) !important;
+					right: 15px !important;
+					left: auto !important;
+					width: auto !important;
+					padding: 0 !important;
+					margin: 0 !important;
+				}
+
+				.score {
+					margin: 0 !important;
+					font-size: clamp(18px, 4vw, 24px) !important;
+					padding: clamp(6px, 1.5vw, 8px) clamp(10px, 2.5vw, 12px) !important;
+				}
+
+				.instructions {
+					display: none !important;
+				}
+			}
+
+			/* Very small screens adjustments */
+			@media (max-width: 480px) {
+				#gameTimer {
+					top: calc(max(20px, env(safe-area-inset-top, 20px)) + 50px) !important;
+					left: 10px !important;
+					font-size: clamp(20px, 4vw, 28px) !important;
+				}
+
+				/* Target the dynamically created score container */
+				#gameScore {
+					top: calc(max(20px, env(safe-area-inset-top, 20px)) + 50px) !important;
+					right: 10px !important;
+				}
+
+				/* Make score elements smaller */
+				#gameScore div {
+					font-size: clamp(20px, 4vw, 28px) !important;
+				}
+
+				#gameScore div:last-child {
+					font-size: clamp(10px, 2vw, 14px) !important;
+				}
+
+				.top-ui {
+					position: fixed !important;
+					top: calc(max(20px, env(safe-area-inset-top, 20px)) + 50px) !important;
+					right: 10px !important;
+					left: auto !important;
+					width: auto !important;
+					padding: 0 !important;
+					margin: 0 !important;
+				}
+
+				.score {
+					margin: 0 !important;
+					font-size: clamp(16px, 3.5vw, 20px) !important;
+					padding: clamp(4px, 1vw, 6px) clamp(8px, 2vw, 10px) !important;
+				}
+
+				.instructions {
+					display: none !important;
+				}
+			}
+
+			/* Landscape orientation on mobile */
+			@media (max-height: 500px) and (orientation: landscape) {
+				#gameTimer {
+					top: calc(max(20px, env(safe-area-inset-top, 20px)) + 45px) !important;
+					left: 10px !important;
+					font-size: clamp(18px, 3.5vw, 24px) !important;
+				}
+
+				/* Target the dynamically created score container */
+				#gameScore {
+					top: calc(max(20px, env(safe-area-inset-top, 20px)) + 45px) !important;
+					right: 10px !important;
+				}
+
+				/* Make score elements smaller */
+				#gameScore div {
+					font-size: clamp(18px, 3.5vw, 24px) !important;
+				}
+
+				#gameScore div:last-child {
+					font-size: clamp(9px, 1.8vw, 12px) !important;
+				}
+
+				.top-ui {
+					position: fixed !important;
+					top: calc(max(20px, env(safe-area-inset-top, 20px)) + 45px) !important;
+					right: 10px !important;
+					left: auto !important;
+					width: auto !important;
+					padding: 0 !important;
+					margin: 0 !important;
+				}
+
+				.score {
+					margin: 0 !important;
+					font-size: clamp(14px, 3vw, 18px) !important;
+					padding: clamp(3px, 0.8vw, 5px) clamp(6px, 1.5vw, 8px) !important;
+				}
+
+				.instructions {
+					display: none !important;
+				}
+			}
+
+			/* Mobile-specific progress bar sizing */
+			@media (hover: none) and (pointer: coarse), (max-width: 768px) {
+				.progress-bar-container {
+					width: 320px !important;
+					max-width: 75vw !important;
+					gap: 10px !important;
+				}
+
+				.progress-bar-track {
+					height: 20px !important;
+					border-radius: 10px !important;
+					border: 2px solid #000000 !important;
+				}
+
+				.progress-penguin {
+					width: 24px !important;
+					height: 24px !important;
+					top: -14px !important;
+				}
+
+				.progress-baby-penguin {
+					width: 32px !important;
+					height: 32px !important;
+				}
+
+				.score-message {
+					font-size: clamp(14px, 3.5vw, 18px) !important;
+				}
+			}
+
+			@media (max-width: 480px) {
+				.progress-bar-container {
+					width: 280px !important;
+					max-width: 70vw !important;
+					gap: 8px !important;
+				}
+
+				.progress-bar-track {
+					height: 18px !important;
+					border-radius: 9px !important;
+					border: 2px solid #000000 !important;
+				}
+
+				.progress-penguin {
+					width: 20px !important;
+					height: 20px !important;
+					top: -12px !important;
+				}
+
+				.progress-baby-penguin {
+					width: 28px !important;
+					height: 28px !important;
+				}
+
+				.score-message {
+					font-size: clamp(12px, 3vw, 16px) !important;
+				}
+			}
+
+			@media (max-height: 500px) and (orientation: landscape) {
+				.progress-bar-container {
+					width: 250px !important;
+					max-width: 60vw !important;
+					gap: 6px !important;
+				}
+
+				.progress-bar-track {
+					height: 16px !important;
+					border-radius: 8px !important;
+					border: 2px solid #000000 !important;
+				}
+
+				.progress-penguin {
+					width: 18px !important;
+					height: 18px !important;
+					top: -10px !important;
+				}
+
+				.progress-baby-penguin {
+					width: 24px !important;
+					height: 24px !important;
+				}
+
+				.score-message {
+					font-size: clamp(11px, 2.5vw, 14px) !important;
+				}
+			}
+
+			/* Mobile-specific fish icon sizing */
+			@media (hover: none) and (pointer: coarse), (max-width: 768px) {
+				.fish-icon {
+					height: clamp(18px, 3vw, 24px) !important;
+					margin-right: 6px !important;
+				}
+			}
+
+			@media (max-width: 480px) {
+				.fish-icon {
+					height: clamp(16px, 2.5vw, 20px) !important;
+					margin-right: 4px !important;
+				}
+			}
+
+			@media (max-height: 500px) and (orientation: landscape) {
+				.fish-icon {
+					height: clamp(14px, 2vw, 18px) !important;
+					margin-right: 4px !important;
 				}
 			}
 		</style>
@@ -369,9 +743,9 @@
 
 		<!-- Game Over Display -->
 		<div class="game-over" id="gameOver">
-			<img src="img/try-again.png" onclick="restartGame()" alt="Try Again" />
-			<br /><br />
 			<p>OOOOPS you fell in the icy water!</p>
+			<br /><br />
+			<img src="img/try-again.png" onclick="restartGame()" alt="Try Again" />
 		</div>
 
 		<!-- Win Screen Modal -->
