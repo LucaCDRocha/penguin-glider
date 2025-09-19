@@ -102,13 +102,23 @@
 
 			.game-over {
 				position: fixed;
-				top: 50%;
-				left: 50%;
-				transform: translate(-50%, -50%);
+				top: 0;
+				left: 0;
+				width: 100vw;
+				height: 100vh;
 				text-align: center;
 				display: none;
 				z-index: 999;
 				pointer-events: auto;
+				
+				/* Dark overlay background */
+				background: rgba(0, 0, 0, 0.75);
+				backdrop-filter: blur(5px);
+				
+				/* Center content */
+				flex-direction: column;
+				justify-content: center;
+				align-items: center;
 			}
 
 			.game-over img {
@@ -125,7 +135,7 @@
 
 			.game-over p {
 				font-family: "Digital-7", "LCD", monospace;
-				color: #000000;
+				color: #ffffff;
 				font-size: clamp(16px, 4vw, 24px); /* smaller & adaptable */
 				font-weight: 200;
 				text-align: center;
@@ -369,9 +379,9 @@
 
 		<!-- Game Over Display -->
 		<div class="game-over" id="gameOver">
-			<img src="img/try-again.png" onclick="restartGame()" alt="Try Again" />
-			<br /><br />
 			<p>OOOOPS you fell in the icy water!</p>
+			<br /><br />
+			<img src="img/try-again.png" onclick="restartGame()" alt="Try Again" />
 		</div>
 
 		<!-- Win Screen Modal -->

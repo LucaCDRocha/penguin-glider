@@ -505,7 +505,7 @@ class PenguinGlider {
 				this.gameState === "gameOver" &&
 				(e.code === "Enter" || e.key === "Enter") &&
 				this.gameOverElement &&
-				this.gameOverElement.style.display === "block"
+				(this.gameOverElement.style.display === "block" || this.gameOverElement.style.display === "flex")
 			) {
 				if (typeof restartGame === "function") {
 					restartGame();
@@ -1475,15 +1475,11 @@ class PenguinGlider {
 	gameOver() {
 		this.gameState = "gameOver";
 		this.stopBackgroundMusicWithFade();
-		this.gameOverElement.style.display = "block";
+		this.gameOverElement.style.display = "flex";
 
 		// Create and position the try again button image
 		const tryAgainBtn = document.createElement("img");
 		tryAgainBtn.src = "img/try-again.png";
-		tryAgainBtn.style.position = "absolute";
-		tryAgainBtn.style.left = "50%";
-		tryAgainBtn.style.top = "50%";
-		tryAgainBtn.style.transform = "translate(-50%, -50%)";
 		tryAgainBtn.style.cursor = "pointer";
 
 		// Bigger and responsive
@@ -1495,10 +1491,10 @@ class PenguinGlider {
 
 		// Hover reaction: slightly enlarge
 		tryAgainBtn.addEventListener("mouseenter", () => {
-			tryAgainBtn.style.transform = "translate(-50%, -50%) scale(1.1)";
+			tryAgainBtn.style.transform = "scale(1.1)";
 		});
 		tryAgainBtn.addEventListener("mouseleave", () => {
-			tryAgainBtn.style.transform = "translate(-50%, -50%) scale(1)";
+			tryAgainBtn.style.transform = "scale(1)";
 		});
 
 		tryAgainBtn.onclick = restartGame;
@@ -1506,20 +1502,16 @@ class PenguinGlider {
 		// Create loss reason text with timer font style
 		const lossReason = document.createElement("p");
 		lossReason.style.fontFamily = "'Share Tech Mono', monospace";
-		lossReason.style.position = "absolute";
-		lossReason.style.left = "50%";
-		lossReason.style.top = "calc(50% + 80px)";
-		lossReason.style.whiteSpace = "nowrap";
-		lossReason.style.transform = "translate(-50%, -50%)";
 		lossReason.style.fontSize = "clamp(14px, 3.5vw, 22px)";
+		lossReason.style.marginTop = "20px";
 		lossReason.textContent = this.penguin.y > this.waterLevel ? "OOOOPS you fell in the icy water!" : "TIME'S UP!";
 
 		// Clear any existing content
 		this.gameOverElement.innerHTML = "";
 
-		// Add the new elements
-		this.gameOverElement.appendChild(lossReason);
+		// Add the new elements (flexbox will center them)
 		this.gameOverElement.appendChild(tryAgainBtn);
+		this.gameOverElement.appendChild(lossReason);
 
 		this.playSound("gameOver");
 		this.timer.stop();
@@ -1722,7 +1714,7 @@ class PenguinGlider {
 		if (this.winScreenElement && this.winScoreElement && this.winTimeElement) {
 			this.winScoreElement.textContent = this.score;
 			this.winTimeElement.textContent = this.timer.formatTime(Math.ceil(this.timer.remainingTime));
-			this.winScreenElement.style.display = "block";
+			this.winScreenElement.style.display = "flex";
 		}
 	}
 
