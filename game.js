@@ -735,7 +735,7 @@ class PenguinGlider {
 
 		// Intelligent fish spawning to ensure minimum availability
 		this.smartFishSpawning(iceberg);
-		
+
 		// Bear spawning on some icebergs (making it challenging but not too common)
 		this.smartBearSpawning(iceberg);
 
@@ -809,7 +809,6 @@ class PenguinGlider {
 		this.checkFishCollection();
 		this.checkBottleCollection();
 		this.checkBearCollisions();
-
 	}
 
 	handleInput(deltaMultiplier = 1) {
@@ -1219,15 +1218,54 @@ class PenguinGlider {
 		}
 	}
 
+	// Helper function to check if an iceberg is overlapping with other icebergs
+	isIcebergOverlapping(targetIceberg) {
+		for (let existingIceberg of this.icebergs) {
+			// Skip checking against itself
+			if (existingIceberg === targetIceberg) {
+				continue;
+			}
+
+			// Check if icebergs overlap horizontally
+			const horizontalOverlap = !(
+				targetIceberg.x + targetIceberg.width < existingIceberg.x ||
+				existingIceberg.x + existingIceberg.width < targetIceberg.x
+			);
+
+			if (horizontalOverlap) {
+				// Calculate how much they overlap
+				const overlapStart = Math.max(targetIceberg.x, existingIceberg.x);
+				const overlapEnd = Math.min(
+					targetIceberg.x + targetIceberg.width,
+					existingIceberg.x + existingIceberg.width
+				);
+				const overlapWidth = overlapEnd - overlapStart;
+				const overlapPercentage = overlapWidth / Math.min(targetIceberg.width, existingIceberg.width);
+
+				// If significant overlap (more than 20%), return true
+				if (overlapPercentage > 0.2) {
+					return true;
+				}
+			}
+		}
+		return false;
+	}
+
 	smartBearSpawning(iceberg) {
 		// Don't spawn bears on the final iceberg
 		if (iceberg.isFinalIceberg) {
 			return;
 		}
 
+		// Bears can ONLY spawn on overlapping icebergs
+		if (!this.isIcebergOverlapping(iceberg)) {
+			return;
+		}
+
 		// Don't spawn bears on the first few icebergs to give player time to get started
 		const distanceFromStart = iceberg.x - this.startPosition;
-		if (distanceFromStart < 600) { // Wait until player has progressed a bit
+		if (distanceFromStart < 600) {
+			// Wait until player has progressed a bit
 			return;
 		}
 
@@ -1240,13 +1278,13 @@ class PenguinGlider {
 				fish.y <= iceberg.y + 10
 		);
 
-		// Lower chance of spawning if there's already a fish on this iceberg
-		let spawnChance = hasExistingFish ? 0.1 : 0.25; // 25% base chance, 10% if fish present
+		// Increased spawn rates since bears can only spawn on overlapping icebergs
+		let spawnChance = hasExistingFish ? 0.2 : 0.45; // Increased from 25% to 45% base chance, 20% if fish present
 
 		// Reduce spawn rate as we get closer to the end to avoid making it too hard
 		const progressThroughLevel = Math.min(distanceFromStart / this.levelLength, 1);
 		if (progressThroughLevel > 0.7) {
-			spawnChance *= 0.5; // Reduce chance by half in final 30% of level
+			spawnChance *= 0.6; // Less reduction - 60% instead of 50% in final 30% of level
 		}
 
 		if (Math.random() < spawnChance) {
@@ -1600,7 +1638,7 @@ class PenguinGlider {
 				if (this.bottleMessageElement) {
 					this.bottleMessageElement.textContent = "OOOPS, watch out for the plastic waste! You loose a fish.";
 					this.bottleMessageElement.style.display = "block";
-					
+
 					// Hide message after 3 seconds
 					setTimeout(() => {
 						if (this.bottleMessageElement) {
@@ -2420,8 +2458,6 @@ class PenguinGlider {
 			this.ctx.globalAlpha = 1;
 		}
 
-
-
 		// Draw final iceberg in foreground (on top of everything else including water)
 		for (let iceberg of this.icebergs) {
 			if (iceberg.isFinalIceberg && this.imagesReady && this.images["end-level"]) {
@@ -2589,12 +2625,12 @@ class PenguinGlider {
 			// Fallback: simple brown bear shape
 			this.ctx.fillStyle = "#8B4513";
 			this.ctx.fillRect(x + w * 0.1, y + h * 0.3, w * 0.8, h * 0.6);
-			
+
 			// Bear head
 			this.ctx.beginPath();
 			this.ctx.arc(x + w / 2, y + h * 0.2, w * 0.3, 0, Math.PI * 2);
 			this.ctx.fill();
-			
+
 			// Bear ears
 			this.ctx.beginPath();
 			this.ctx.arc(x + w * 0.3, y + h * 0.1, w * 0.1, 0, Math.PI * 2);
@@ -2625,10 +2661,10 @@ class PenguinGlider {
 			// Fallback: simple bottle shape
 			this.ctx.fillStyle = "#654321"; // Brown bottle color
 			this.ctx.fillRect(x + w * 0.3, y + h * 0.1, w * 0.4, h * 0.8); // Main bottle body
-			
+
 			// Bottle neck
 			this.ctx.fillRect(x + w * 0.4, y, w * 0.2, h * 0.3);
-			
+
 			// Bottle cap
 			this.ctx.fillStyle = "#333333";
 			this.ctx.fillRect(x + w * 0.35, y, w * 0.3, h * 0.15);
