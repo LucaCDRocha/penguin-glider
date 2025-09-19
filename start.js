@@ -29,6 +29,29 @@ window.addEventListener("DOMContentLoaded", function () {
 	logo.style.filter = "drop-shadow(0 0 32px #b3e0ff) drop-shadow(0 0 8px #4a90e2)";
 	document.body.appendChild(logo);
 
+	// Create loading circle
+	var loadingCircle = document.createElement("div");
+	loadingCircle.id = "loadingCircle";
+	loadingCircle.className = "loading-circle";
+	loadingCircle.style.opacity = "0";
+	loadingCircle.style.transition = "opacity 0.5s ease-in";
+	document.body.appendChild(loadingCircle);
+
+	// Create loading text
+	var loadingText = document.createElement("div");
+	loadingText.id = "loadingText";
+	loadingText.className = "loading-text";
+	loadingText.textContent = "Loading...";
+	loadingText.style.opacity = "0";
+	loadingText.style.transition = "opacity 0.5s ease-in";
+	document.body.appendChild(loadingText);
+
+	// Fade in loading elements after a short delay
+	setTimeout(() => {
+		loadingCircle.style.opacity = "1";
+		loadingText.style.opacity = "0.8";
+	}, 300);
+
 	// Create a temporary game instance to load images and check when they're ready
 	var tempGame = null;
 	var logoAnimationTriggered = false;
@@ -42,10 +65,22 @@ window.addEventListener("DOMContentLoaded", function () {
 			tempGame = new PenguinGlider(false); // Create game instance with autoStart disabled
 		}
 
+		// Update loading progress periodically
+		function updateLoadingProgress() {
+			var loadingText = document.getElementById("loadingText");
+			if (tempGame && loadingText && !tempGame.imagesReady) {
+				var progress = Math.round((tempGame.imagesLoaded / tempGame.totalImages) * 100);
+				loadingText.textContent = `Loading... ${progress}%`;
+			}
+		}
+
 		// Poll for when images are ready AND minimum time has passed
 		function checkImagesReady() {
 			var timeElapsed = Date.now() - logoStartTime;
 			var minimumTimePassed = timeElapsed >= minimumLogoDisplayTime;
+
+			// Update loading progress
+			updateLoadingProgress();
 
 			if (tempGame && tempGame.imagesReady && minimumTimePassed && !logoAnimationTriggered) {
 				logoAnimationTriggered = true;
@@ -90,6 +125,28 @@ window.addEventListener("DOMContentLoaded", function () {
 
 	// Function to shrink and move logo to top (never disappears)
 	function shrinkLogoToTopAndShowIntro() {
+		// Fade out loading circle and text smoothly
+		var loadingCircle = document.getElementById("loadingCircle");
+		var loadingText = document.getElementById("loadingText");
+		if (loadingCircle) {
+			loadingCircle.style.transition = "opacity 0.5s ease-out";
+			loadingCircle.style.opacity = "0";
+			setTimeout(() => {
+				if (loadingCircle.parentNode) {
+					loadingCircle.style.display = "none";
+				}
+			}, 500);
+		}
+		if (loadingText) {
+			loadingText.style.transition = "opacity 0.5s ease-out";
+			loadingText.style.opacity = "0";
+			setTimeout(() => {
+				if (loadingText.parentNode) {
+					loadingText.style.display = "none";
+				}
+			}, 500);
+		}
+
 		// Animate logo up and shrink, keep visible at top
 		logo.style.maxWidth = "180px";
 		logo.style.maxHeight = "120px";
@@ -160,11 +217,21 @@ window.addEventListener("DOMContentLoaded", function () {
 				playBtn.style.transform = "translateX(-50%)";
 			});
 			playBtn.addEventListener("click", function () {
-				// Remove all intro elements (including white bg)
+				// Remove all intro elements (including white bg and loading elements)
 				bg.remove();
 				logo.remove();
 				text.remove();
 				playBtn.remove();
+
+				// Also remove loading elements if they still exist
+				var loadingCircle = document.getElementById("loadingCircle");
+				var loadingText = document.getElementById("loadingText");
+				if (loadingCircle) {
+					loadingCircle.remove();
+				}
+				if (loadingText) {
+					loadingText.remove();
+				}
 
 				// Use the existing game instance and start it properly
 				if (tempGame && tempGame.imagesReady) {

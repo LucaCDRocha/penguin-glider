@@ -355,6 +355,44 @@
 					font-size: clamp(14px, 2.5vw, 18px);
 				}
 			}
+
+			/* Loading Circle Styles */
+			.loading-circle {
+				position: fixed;
+				width: clamp(30px, 8vw, 40px);
+				height: clamp(30px, 8vw, 40px);
+				left: 50%;
+				top: calc(50% + clamp(140px, 35vw, 180px));
+				transform: translateX(-50%);
+				z-index: 1002;
+				border: 3px solid rgba(74, 144, 226, 0.3);
+				border-left: 3px solid #4a90e2;
+				border-radius: 50%;
+				animation: spin 1s linear infinite;
+				filter: drop-shadow(0 0 12px rgba(74, 144, 226, 0.6));
+			}
+
+			@keyframes spin {
+				0% { transform: translateX(-50%) rotate(0deg); }
+				100% { transform: translateX(-50%) rotate(360deg); }
+			}
+
+			/* Loading text */
+			.loading-text {
+				position: fixed;
+				left: 50%;
+				top: calc(50% + clamp(200px, 45vw, 240px));
+				transform: translateX(-50%);
+				z-index: 1002;
+				font-family: "Segoe UI", Arial, Helvetica Neue, sans-serif;
+				font-weight: 300;
+				font-size: clamp(14px, 4vw, 16px);
+				color: #4a90e2;
+				text-align: center;
+				text-shadow: 0 2px 8px rgba(74, 144, 226, 0.4);
+				opacity: 0.8;
+				white-space: nowrap;
+			}
 		</style>
 	</head>
 	<body>
