@@ -207,13 +207,51 @@
 				bottom: 0;
 				left: 0;
 				width: 100vw;
+				height: clamp(160px, 40vh, 220px);
 				display: none;
 				flex-direction: row;
 				justify-content: space-between;
-				align-items: center;
+				align-items: flex-end;
 				padding: max(20px, env(safe-area-inset-bottom, 20px)) 20px;
+				padding-bottom: 50px;
 				z-index: 15;
 				pointer-events: none;
+				/* Add subtle overlay background */
+				background: linear-gradient(
+					to top,
+					rgba(0, 0, 0, 0.3) 0%,
+					rgba(0, 0, 0, 0.15) 40%,
+					rgba(0, 0, 0, 0.05) 70%,
+					transparent 100%
+				);
+			}
+
+			/* Create gradient blur effect using pseudo-element */
+			.mobile-controls::before {
+				content: '';
+				position: absolute;
+				top: 0;
+				left: 0;
+				right: 0;
+				bottom: 0;
+				backdrop-filter: blur(12px);
+				-webkit-backdrop-filter: blur(12px);
+				mask: linear-gradient(
+					to top,
+					rgba(0, 0, 0, 1) 0%,
+					rgba(0, 0, 0, 0.8) 30%,
+					rgba(0, 0, 0, 0.3) 70%,
+					transparent 100%
+				);
+				-webkit-mask: linear-gradient(
+					to top,
+					rgba(0, 0, 0, 1) 0%,
+					rgba(0, 0, 0, 0.8) 30%,
+					rgba(0, 0, 0, 0.3) 70%,
+					transparent 100%
+				);
+				pointer-events: none;
+				z-index: -1;
 			}
 
 			.control-button {
@@ -248,8 +286,8 @@
 			.jump-button {
 				flex: 0 0 auto;
 				margin: 0;
-				width: clamp(90px, 30vw, 160px);
-				height: clamp(90px, 30vw, 160px);
+				flex-grow: 1;
+				/* width: 100%; */
 			}
 
 			.jump-button:active {
@@ -307,8 +345,9 @@
 				}
 
 				.mobile-controls {
-					bottom: 10px;
-					padding: 10px;
+					bottom: 0;
+					padding: max(10px, env(safe-area-inset-bottom, 10px)) 10px;
+					padding-bottom: max(40px, env(safe-area-inset-bottom, 40px));
 					gap: 0;
 				}
 
@@ -340,8 +379,9 @@
 				}
 
 				.mobile-controls {
-					bottom: 5px;
-					padding: 5px 15px;
+					bottom: 0;
+					padding: max(5px, env(safe-area-inset-bottom, 5px)) 15px;
+					padding-bottom: max(30px, env(safe-area-inset-bottom, 30px));
 				}
 
 				.control-button {
