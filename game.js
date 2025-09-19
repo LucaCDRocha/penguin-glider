@@ -1714,6 +1714,83 @@ class PenguinGlider {
 		if (this.winScreenElement && this.winScoreElement && this.winTimeElement) {
 			this.winScoreElement.textContent = this.score;
 			this.winTimeElement.textContent = this.timer.formatTime(Math.ceil(this.timer.remainingTime));
+
+			// Create and add the bravo image
+			const bravoImg = document.createElement("img");
+			bravoImg.src = "img/brrravoo.png";
+			bravoImg.style.width = "clamp(250px, 35vw, 400px)";
+			bravoImg.style.height = "auto";
+			bravoImg.style.marginBottom = "20px";
+
+			// Override CSS hover effects - make it non-interactive
+			bravoImg.style.cursor = "default";
+			bravoImg.style.transition = "none";
+			bravoImg.style.transform = "none";
+
+			// Add event listeners to prevent any hover scaling
+			bravoImg.addEventListener("mouseenter", (e) => {
+				e.target.style.transform = "none";
+			});
+			bravoImg.addEventListener("mouseleave", (e) => {
+				e.target.style.transform = "none";
+			});
+
+			// Clear existing content and add bravo image at the top
+			this.winScreenElement.innerHTML = "";
+			this.winScreenElement.appendChild(bravoImg);
+
+			// Add the existing win screen content
+			const winContent = document.createElement("div");
+			winContent.innerHTML = `
+				<h2>🎉 Level Complete! 🎉</h2>
+				<p>You successfully reached the end with enough fish! 🐟</p>
+				<p>Final Score: <span id="winScore">${this.score}</span> fish</p>
+				<p>Time Remaining: <span id="winTime">${this.timer.formatTime(Math.ceil(this.timer.remainingTime))}</span></p>
+			`;
+
+			// Create styled Play Again button
+			const playAgainBtn = document.createElement("button");
+			playAgainBtn.textContent = "Play Again";
+			playAgainBtn.onclick = restartGame;
+
+			// Style the button
+			playAgainBtn.style.background = "#4a90e2";
+			playAgainBtn.style.color = "white";
+			playAgainBtn.style.border = "none";
+			playAgainBtn.style.padding = "clamp(12px, 3vw, 15px) clamp(24px, 6vw, 30px)";
+			playAgainBtn.style.borderRadius = "10px";
+			playAgainBtn.style.cursor = "pointer";
+			playAgainBtn.style.fontSize = "clamp(16px, 4vw, 20px)";
+			playAgainBtn.style.fontWeight = "bold";
+			playAgainBtn.style.transition = "all 0.3s ease";
+			playAgainBtn.style.marginTop = "20px";
+			playAgainBtn.style.boxShadow = "0 4px 15px rgba(74, 144, 226, 0.4)";
+			playAgainBtn.style.fontFamily = "Arial, sans-serif";
+
+			// Hover effects
+			playAgainBtn.addEventListener("mouseenter", () => {
+				playAgainBtn.style.background = "#357abd";
+				playAgainBtn.style.transform = "scale(1.05)";
+				playAgainBtn.style.boxShadow = "0 6px 20px rgba(74, 144, 226, 0.6)";
+			});
+
+			playAgainBtn.addEventListener("mouseleave", () => {
+				playAgainBtn.style.background = "#4a90e2";
+				playAgainBtn.style.transform = "scale(1)";
+				playAgainBtn.style.boxShadow = "0 4px 15px rgba(74, 144, 226, 0.4)";
+			});
+
+			// Active state
+			playAgainBtn.addEventListener("mousedown", () => {
+				playAgainBtn.style.transform = "scale(0.95)";
+			});
+
+			playAgainBtn.addEventListener("mouseup", () => {
+				playAgainBtn.style.transform = "scale(1.05)";
+			});
+
+			winContent.appendChild(playAgainBtn);
+			this.winScreenElement.appendChild(winContent);
 			this.winScreenElement.style.display = "flex";
 		}
 	}
