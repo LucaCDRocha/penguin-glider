@@ -1,10 +1,18 @@
 // start.js - Animated intro for Penguin Glider
 window.addEventListener("DOMContentLoaded", function () {
 	// Create water-bubbles audio element
-	var bubbleAudio = new Audio("water-bubbles.mp3");
+	var bubbleAudio = new Audio("music/water-bubbles.mp3");
 	bubbleAudio.loop = true;
 	bubbleAudio.preload = "auto";
-	bubbleAudio.volume = 1; // Slightly lower volume for ambient effect
+	bubbleAudio.volume = 0.8; // High volume as requested
+	
+	// Add error handling and loading events for debugging
+	bubbleAudio.addEventListener('canplay', function() {
+		console.log("Water bubbles audio loaded successfully");
+	});
+	bubbleAudio.addEventListener('error', function(e) {
+		console.error("Water bubbles audio failed to load:", e);
+	});
 
 	// Create white background overlay
 	var bg = document.createElement("div");
@@ -131,8 +139,17 @@ window.addEventListener("DOMContentLoaded", function () {
 
 	// Function to shrink and move logo to top (never disappears)
 	function shrinkLogoToTopAndShowIntro() {
-		// Start playing water bubbles audio during intro
-		bubbleAudio.play().catch(e => console.log("Could not play bubbles audio:", e));
+		// Start playing water bubbles audio immediately when intro appears
+		bubbleAudio.play().then(() => {
+			console.log("Water bubbles audio started successfully");
+		}).catch(e => {
+			console.log("Could not auto-play bubbles audio (browser policy):", e);
+			// If autoplay fails, try again on first user interaction
+			document.addEventListener("click", function startBubblesOnClick() {
+				bubbleAudio.play().catch(e2 => console.log("Click-triggered bubble play failed:", e2));
+				document.removeEventListener("click", startBubblesOnClick);
+			}, { once: true });
+		});
 		
 		// Fade background to game-like blue
 		var loadingCircle = document.getElementById("loadingCircle");
@@ -234,7 +251,7 @@ window.addEventListener("DOMContentLoaded", function () {
 							bubbleAudio.volume = Math.max(0, bubbleAudio.volume - 0.05);
 						} else {
 							bubbleAudio.pause();
-							bubbleAudio.volume = 0.6; // Reset for potential future use
+							bubbleAudio.volume = 0.8; // Reset to match initial high volume
 							clearInterval(bubbleFadeOut);
 						}
 					}, 50);
