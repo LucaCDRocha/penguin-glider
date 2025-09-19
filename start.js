@@ -4,7 +4,7 @@ window.addEventListener("DOMContentLoaded", function () {
 	var bubbleAudio = new Audio("music/water-bubbles.mp3");
 	bubbleAudio.loop = true;
 	bubbleAudio.preload = "auto";
-	bubbleAudio.volume = 0.8; // High volume as requested
+	bubbleAudio.volume = 0.6; // High volume as requested
 	
 	// Add error handling and loading events for debugging
 	bubbleAudio.addEventListener('canplay', function() {
