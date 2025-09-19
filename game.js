@@ -27,8 +27,8 @@ class PenguinGlider {
 		this.penguin = {
 			x: 100,
 			y: 0, // Will be set relative to water level when icebergs are generated
-			width: 60,
-			height: 60,
+			width: 80,
+			height: 80,
 			velocityX: 0,
 			velocityY: 0,
 			onIceberg: false,
@@ -50,6 +50,12 @@ class PenguinGlider {
 
 		// Fish for collecting points
 		this.fish = [];
+
+		// Bears for obstacles
+		this.bears = [];
+
+		// Bottles for reducing fish count
+		this.bottles = [];
 
 		// Water level (will be calculated properly after canvas setup)
 		this.waterLevel = 400; // Default value, will be recalculated
@@ -107,13 +113,13 @@ class PenguinGlider {
 		// Background music system - using MP3 file
 		this.backgroundMusic = null;
 		this.musicKeyPressed = false; // Track M key press state
-		
+
 		// Create HTML5 Audio element for music.mp3
 		try {
-			this.backgroundMusic = new Audio('music.mp3');
+			this.backgroundMusic = new Audio("music.mp3");
 			this.backgroundMusic.loop = true; // Loop the music
-			this.backgroundMusic.volume = 0.3; // Set volume (0.0 to 1.0)
-			this.backgroundMusic.preload = 'auto'; // Preload the audio
+			this.backgroundMusic.volume = 0.2; // Set volume (0.0 to 1.0) - Lower volume
+			this.backgroundMusic.preload = "auto"; // Preload the audio
 			console.log("MP3 background music loaded successfully");
 		} catch (error) {
 			console.warn("Failed to load background music:", error);
@@ -153,6 +159,7 @@ class PenguinGlider {
 			"fish2.png",
 			"fish3.png",
 			"fish4.png",
+			"bear.png",
 			"water.png",
 			"waves.png",
 			"moutain.png",
@@ -740,6 +747,12 @@ class PenguinGlider {
 		// Intelligent fish spawning to ensure minimum availability
 		this.smartFishSpawning(iceberg);
 
+		// Bear spawning on some icebergs (making it challenging but not too common)
+		this.smartBearSpawning(iceberg);
+
+		// Bottle spawning (less frequent than fish, reduces fish count)
+		this.smartBottleSpawning(iceberg);
+
 		return newIcebergY;
 	}
 
@@ -799,11 +812,15 @@ class PenguinGlider {
 		this.updatePenguin(deltaMultiplier);
 		this.updateIcebergs(deltaMultiplier);
 		this.updateFish(deltaMultiplier);
+		this.updateBears(deltaMultiplier);
+		this.updateBottles(deltaMultiplier);
 		this.updateParticles(deltaMultiplier);
 		this.updateSnowflakes(deltaMultiplier);
 		this.updateWaves(deltaMultiplier);
 		this.checkCollisions();
 		this.checkFishCollection();
+		this.checkBottleCollection();
+		this.checkBearCollisions();
 	}
 
 	handleInput(deltaMultiplier = 1) {
@@ -1086,6 +1103,32 @@ class PenguinGlider {
 		this.fish = this.fish.filter((fish) => fish.x + fish.width > this.camera.x - 200);
 	}
 
+	updateBears(deltaMultiplier = 1) {
+		// Animate bears (slight movement and breathing animation)
+		for (let bear of this.bears) {
+			bear.animationTimer += 0.05 * deltaMultiplier; // Slower animation than fish
+
+			// Add slight breathing/idle animation
+			bear.y += Math.sin(bear.animationTimer) * 0.3 * deltaMultiplier;
+		}
+
+		// Remove bears that are off camera view (left side)
+		this.bears = this.bears.filter((bear) => bear.x + bear.width > this.camera.x - 200);
+	}
+
+	updateBottles(deltaMultiplier = 1) {
+		// Animate bottles (similar to fish but different motion)
+		for (let bottle of this.bottles) {
+			bottle.animationTimer += 0.08 * deltaMultiplier; // Similar to fish animation
+
+			// Add slight bobbing motion (like floating)
+			bottle.y += Math.sin(bottle.animationTimer) * 0.4 * deltaMultiplier;
+		}
+
+		// Remove bottles that are off camera view (left side)
+		this.bottles = this.bottles.filter((bottle) => bottle.x + bottle.width > this.camera.x - 200);
+	}
+
 	spawnFishOnIceberg(iceberg) {
 		// Spawn a fish directly on top of the iceberg
 		const fishMargin = 20; // Small margin from iceberg edges
@@ -1103,6 +1146,40 @@ class PenguinGlider {
 		};
 		this.fish.push(fish);
 		this.fishSpawned++;
+	}
+
+	spawnBearOnIceberg(iceberg) {
+		// Spawn a bear lying on the iceberg (bigger and lower than fish)
+		const bearMargin = 40; // Larger margin for bigger bears
+		const bearWidth = 80; // Bigger bear size
+		const bearHeight = 40; // Wider/flatter for lying position
+		const bearX = iceberg.x + bearMargin + Math.random() * (iceberg.width - 2 * bearMargin - bearWidth);
+		const bearY = iceberg.y - bearHeight + 15; // Position lower on iceberg surface (partially embedded)
+
+		const bear = {
+			x: bearX,
+			y: bearY,
+			width: bearWidth,
+			height: bearHeight,
+			animationTimer: Math.random() * Math.PI * 2, // Random starting animation phase
+		};
+		this.bears.push(bear);
+	}
+
+	spawnBottleOnIceberg(iceberg) {
+		// Spawn a bottle on top of the iceberg (20% bigger than fish)
+		const bottleMargin = 20; // Same margin as fish
+		const bottleX = iceberg.x + bottleMargin + Math.random() * (iceberg.width - 2 * bottleMargin - 48); // 48 is bottle width (20% bigger)
+		const bottleY = iceberg.y - 29; // 29 is bottle height (20% bigger), positioned above iceberg top
+
+		const bottle = {
+			x: bottleX,
+			y: bottleY,
+			width: 48, // 20% bigger than fish (40 * 1.2 = 48)
+			height: 29, // 20% bigger than fish (24 * 1.2 = 29)
+			animationTimer: Math.random() * Math.PI * 2, // Random starting animation phase
+		};
+		this.bottles.push(bottle);
 	}
 
 	smartFishSpawning(iceberg) {
@@ -1153,6 +1230,122 @@ class PenguinGlider {
 		}
 	}
 
+	// Helper function to check if an iceberg is overlapping with other icebergs
+	isIcebergOverlapping(targetIceberg) {
+		for (let existingIceberg of this.icebergs) {
+			// Skip checking against itself
+			if (existingIceberg === targetIceberg) {
+				continue;
+			}
+
+			// Check if icebergs overlap horizontally
+			const horizontalOverlap = !(
+				targetIceberg.x + targetIceberg.width < existingIceberg.x ||
+				existingIceberg.x + existingIceberg.width < targetIceberg.x
+			);
+
+			if (horizontalOverlap) {
+				// Calculate how much they overlap
+				const overlapStart = Math.max(targetIceberg.x, existingIceberg.x);
+				const overlapEnd = Math.min(
+					targetIceberg.x + targetIceberg.width,
+					existingIceberg.x + existingIceberg.width
+				);
+				const overlapWidth = overlapEnd - overlapStart;
+				const overlapPercentage = overlapWidth / Math.min(targetIceberg.width, existingIceberg.width);
+
+				// If significant overlap (more than 20%), return true
+				if (overlapPercentage > 0.2) {
+					return true;
+				}
+			}
+		}
+		return false;
+	}
+
+	smartBearSpawning(iceberg) {
+		// Don't spawn bears on the final iceberg
+		if (iceberg.isFinalIceberg) {
+			return;
+		}
+
+		// Bears can ONLY spawn on overlapping icebergs
+		if (!this.isIcebergOverlapping(iceberg)) {
+			return;
+		}
+
+		// Don't spawn bears on the first few icebergs to give player time to get started
+		const distanceFromStart = iceberg.x - this.startPosition;
+		if (distanceFromStart < 600) {
+			// Wait until player has progressed a bit
+			return;
+		}
+
+		// Check if this iceberg already has a fish - avoid spawning bear on same iceberg as fish
+		const hasExistingFish = this.fish.some(
+			(fish) =>
+				fish.x >= iceberg.x &&
+				fish.x <= iceberg.x + iceberg.width &&
+				fish.y >= iceberg.y - 30 &&
+				fish.y <= iceberg.y + 10
+		);
+
+		// Increased spawn rates since bears can only spawn on overlapping icebergs
+		let spawnChance = hasExistingFish ? 0.2 : 0.45; // Increased from 25% to 45% base chance, 20% if fish present
+
+		// Reduce spawn rate as we get closer to the end to avoid making it too hard
+		const progressThroughLevel = Math.min(distanceFromStart / this.levelLength, 1);
+		if (progressThroughLevel > 0.7) {
+			spawnChance *= 0.6; // Less reduction - 60% instead of 50% in final 30% of level
+		}
+
+		if (Math.random() < spawnChance) {
+			this.spawnBearOnIceberg(iceberg);
+		}
+	}
+
+	smartBottleSpawning(iceberg) {
+		// Don't spawn bottles on the final iceberg
+		if (iceberg.isFinalIceberg) {
+			return;
+		}
+
+		// Don't spawn bottles on the first few icebergs
+		const distanceFromStart = iceberg.x - this.startPosition;
+		if (distanceFromStart < 400) {
+			return;
+		}
+
+		// Check if this iceberg already has fish or bears - avoid overcrowding
+		const hasExistingFish = this.fish.some(
+			(fish) =>
+				fish.x >= iceberg.x &&
+				fish.x <= iceberg.x + iceberg.width &&
+				fish.y >= iceberg.y - 30 &&
+				fish.y <= iceberg.y + 10
+		);
+
+		const hasExistingBear = this.bears.some(
+			(bear) =>
+				bear.x >= iceberg.x &&
+				bear.x <= iceberg.x + iceberg.width &&
+				bear.y >= iceberg.y - 60 &&
+				bear.y <= iceberg.y + 20
+		);
+
+		// Lower spawn rate than fish - bottles are much less common
+		let spawnChance = 0.35; // 15% base chance (much lower than fish)
+
+		// Lower chance if there's already fish or bears on this iceberg
+		if (hasExistingFish || hasExistingBear) {
+			spawnChance = 0.15; // 5% chance if crowded
+		}
+
+		if (Math.random() < spawnChance) {
+			this.spawnBottleOnIceberg(iceberg);
+		}
+	}
+
 	updateParticles(deltaMultiplier = 1) {
 		for (let i = this.particles.length - 1; i >= 0; i--) {
 			const particle = this.particles[i];
@@ -1188,10 +1381,11 @@ class PenguinGlider {
 
 	updateWaves(deltaMultiplier = 1) {
 		// More frequent wave spawning in the lower half of visible screen only
-		if (Math.random() < 0.05) { // Increased frequency from 0.02 to 0.05
+		if (Math.random() < 0.05) {
+			// Increased frequency from 0.02 to 0.05
 			// Calculate lower half of visible screen in world coordinates
-			const lowerHalfStart = this.camera.y + (this.canvas.height / 2);
-			
+			const lowerHalfStart = this.camera.y + this.canvas.height / 2;
+
 			this.waves.push({
 				x: this.camera.x + Math.random() * this.canvas.width, // Spawn only in visible screen width
 				y: lowerHalfStart + Math.random() * (this.canvas.height / 2),
@@ -1201,23 +1395,23 @@ class PenguinGlider {
 				life: 1.0,
 				scale: 0.3 + Math.random() * 0.4, // Keep smaller size
 				wobbleSpeed: Math.random() * 0.3 + 0.15, // Faster wobbling (3x faster)
-				wobbleAmount: Math.random() * 1.2 + 0.4 // More intense wobble
+				wobbleAmount: Math.random() * 1.2 + 0.4, // More intense wobble
 			});
 		}
 
 		// Update existing waves with faster on-the-spot movement
 		for (let i = this.waves.length - 1; i >= 0; i--) {
 			const wave = this.waves[i];
-			
+
 			// Basic movement
 			wave.x += wave.speedX * deltaMultiplier;
 			wave.y += wave.speedY * deltaMultiplier;
-			
+
 			// Add faster wobbling motion on the spot
 			const time = Date.now() * 0.005; // Faster time multiplier
 			wave.x += Math.sin(time * wave.wobbleSpeed) * wave.wobbleAmount * deltaMultiplier;
 			wave.y += Math.cos(time * wave.wobbleSpeed * 1.3) * wave.wobbleAmount * deltaMultiplier;
-			
+
 			wave.life -= 0.002 * deltaMultiplier;
 
 			// Remove waves that are too old or have moved too far from visible area
@@ -1479,6 +1673,65 @@ class PenguinGlider {
 		}
 	}
 
+	checkBottleCollection() {
+		for (let i = this.bottles.length - 1; i >= 0; i--) {
+			const bottle = this.bottles[i];
+
+			// Check if penguin collides with bottle
+			if (
+				this.penguin.x < bottle.x + bottle.width &&
+				this.penguin.x + this.penguin.width > bottle.x &&
+				this.penguin.y < bottle.y + bottle.height &&
+				this.penguin.y + this.penguin.height > bottle.y
+			) {
+				// Bottle collected! Reduce fish count by 1
+				this.score = Math.max(0, this.score - 1); // Don't go below 0
+				this.updateScoreDisplay();
+
+				// Show bottle collision message
+				if (this.bottleMessageElement) {
+					this.bottleMessageElement.textContent = "OOOPS, watch out for the plastic waste! You loose a fish.";
+					this.bottleMessageElement.style.display = "block";
+
+					// Hide message after 3 seconds
+					setTimeout(() => {
+						if (this.bottleMessageElement) {
+							this.bottleMessageElement.style.display = "none";
+						}
+					}, 3000);
+				}
+
+				// Create negative particles (different color)
+				this.createBottleCollectionParticles(bottle.x + bottle.width / 2, bottle.y + bottle.height / 2);
+
+				// Play a different sound (we can reuse the collect sound but could be different)
+				this.playSound("collect");
+
+				// Remove the bottle
+				this.bottles.splice(i, 1);
+			}
+		}
+	}
+
+	checkBearCollisions() {
+		for (let i = this.bears.length - 1; i >= 0; i--) {
+			const bear = this.bears[i];
+
+			// Check if penguin collides with bear
+			if (
+				this.penguin.x < bear.x + bear.width &&
+				this.penguin.x + this.penguin.width > bear.x &&
+				this.penguin.y < bear.y + bear.height &&
+				this.penguin.y + this.penguin.height > bear.y
+			) {
+				// Bear collision - game over!
+				this.bearCollision = true; // Flag to show special message
+				this.gameOver();
+				return;
+			}
+		}
+	}
+
 	createFishCollectionParticles(x, y) {
 		for (let i = 0; i < 12; i++) {
 			this.particles.push({
@@ -1488,6 +1741,19 @@ class PenguinGlider {
 				velocityY: (Math.random() - 0.5) * 8,
 				life: 40,
 				color: `hsl(${Math.random() * 60 + 180}, 70%, ${Math.random() * 30 + 50}%)`,
+			});
+		}
+	}
+
+	createBottleCollectionParticles(x, y) {
+		for (let i = 0; i < 10; i++) {
+			this.particles.push({
+				x: x,
+				y: y,
+				velocityX: (Math.random() - 0.5) * 6,
+				velocityY: (Math.random() - 0.5) * 6,
+				life: 35,
+				color: `hsl(${Math.random() * 30}, 50%, ${Math.random() * 20 + 30}%)`, // Brown/gray particles for negative effect
 			});
 		}
 	}
@@ -1557,7 +1823,17 @@ class PenguinGlider {
 		lossReason.style.fontFamily = "'Share Tech Mono', monospace";
 		lossReason.style.fontSize = "clamp(14px, 3.5vw, 22px)";
 		lossReason.style.marginTop = "20px";
-		lossReason.textContent = this.penguin.y > this.waterLevel ? "OOOOPS you fell in the icy water!" : "TIME'S UP!";
+
+		// Determine loss reason
+		let message;
+		if (this.bearCollision) {
+			message = "OOOOPS, watch out for the polar bears!";
+		} else if (this.penguin.y > this.waterLevel) {
+			message = "OOOOPS you fell in the icy water!";
+		} else {
+			message = "TIME'S UP!";
+		}
+		lossReason.textContent = message;
 
 		// Clear any existing content
 		this.gameOverElement.innerHTML = "";
@@ -1693,9 +1969,11 @@ class PenguinGlider {
 		// Create penguin-baby icon (positioned at end)
 		this.progressBabyIcon = document.createElement("img");
 		this.progressBabyIcon.src = "img/penguin-baby.png";
+
 		this.progressBabyIcon.className = "progress-baby-penguin"; // Add class for CSS targeting
-		this.progressBabyIcon.style.width = "70px";
-		this.progressBabyIcon.style.height = "70px";
+		this.progressBabyIcon.style.width = "60px";
+		this.progressBabyIcon.style.height = "60px";
+
 		this.progressBabyIcon.style.objectFit = "contain";
 		this.progressBabyIcon.style.flexShrink = "0";
 
@@ -1708,6 +1986,22 @@ class PenguinGlider {
 		this.progressText.style.marginTop = "6px";
 		this.progressText.style.width = "100%";
 		this.progressText.textContent = "Level Progress: 0%";
+
+		// Create bottle message element - positioned at center top of screen
+		this.bottleMessageElement = document.createElement("div");
+		this.bottleMessageElement.style.position = "fixed";
+		this.bottleMessageElement.style.top = "15%";
+		this.bottleMessageElement.style.left = "50%";
+		this.bottleMessageElement.style.transform = "translateX(-50%)";
+		this.bottleMessageElement.style.fontFamily = "'Share Tech Mono', monospace";
+		this.bottleMessageElement.style.textAlign = "center";
+		this.bottleMessageElement.style.fontSize = "clamp(12px, 2.5vw, 18px)"; // Smaller than game over messages
+		this.bottleMessageElement.style.color = "#c50000ff"; // Red color
+		this.bottleMessageElement.style.zIndex = "100"; // Above everything else
+		this.bottleMessageElement.style.display = "none"; // Initially hidden
+		this.bottleMessageElement.style.padding = "10px 20px";
+		this.bottleMessageElement.style.maxWidth = "80vw";
+		document.body.appendChild(this.bottleMessageElement);
 
 		// Assemble the track elements
 		this.progressBarTrack.appendChild(this.progressBarFill);
@@ -1856,11 +2150,45 @@ class PenguinGlider {
 	}
 
 	restart() {
-		// Stop and clean up any existing background music
+		// Stop and clean up any existing background music completely
+		console.log("Restart: Stopping background music");
 		this.stopBackgroundMusic();
 
-		// Completely destroy and recreate the music instance to avoid any state issues
-		this.backgroundMusic = null;
+		// Clear any fade intervals
+		if (this.fadeInterval) {
+			clearInterval(this.fadeInterval);
+			this.fadeInterval = null;
+		}
+
+		// Wait a moment for audio to properly stop, then completely recreate
+		setTimeout(() => {
+			// Completely destroy and recreate the music instance to avoid any state issues
+			if (this.backgroundMusic) {
+				this.backgroundMusic.src = ""; // Clear source
+				this.backgroundMusic.load(); // Reset the element
+			}
+			this.backgroundMusic = null;
+
+			// Recreate MP3 background music instance fresh
+			try {
+				this.backgroundMusic = new Audio("music.mp3");
+				this.backgroundMusic.loop = true;
+				this.backgroundMusic.volume = 0.2; // Lower volume
+				this.backgroundMusic.preload = "auto";
+				console.log("MP3 background music recreated for restart");
+
+				// Start background music after a brief delay
+				setTimeout(async () => {
+					try {
+						await this.startBackgroundMusic();
+					} catch (error) {
+						console.warn("Failed to start background music after restart:", error);
+					}
+				}, 100);
+			} catch (error) {
+				console.warn("Failed to recreate background music:", error);
+			}
+		}, 100);
 
 		// Clean up existing UI elements to prevent duplicates
 		if (this.scoreContainer && this.scoreContainer.parentNode) {
@@ -1873,6 +2201,7 @@ class PenguinGlider {
 		this.gameState = "playing";
 		this.score = 0;
 		this.fromRestart = true;
+		this.bearCollision = false; // Reset bear collision flag
 		this.timer.reset();
 		this.timer.show();
 		this.timer.start();
@@ -1888,9 +2217,16 @@ class PenguinGlider {
 		// Clear game objects
 		this.icebergs = [];
 		this.fish = [];
+		this.bears = []; // Clear bears
+		this.bottles = []; // Clear bottles
 		this.glideTimer = 0;
 		this.particles = [];
 		this.snowflakes = []; // Clear existing snowflakes
+
+		// Reset bottle message
+		if (this.bottleMessageElement) {
+			this.bottleMessageElement.style.display = "none";
+		}
 
 		// Reset camera
 		this.camera.x = 0;
@@ -1932,22 +2268,6 @@ class PenguinGlider {
 		this.updateScoreDisplay();
 		this.scoreContainer.style.display = "block";
 		this.progressSystemContainer.style.display = "block";
-
-		// Recreate MP3 background music instance fresh
-		try {
-			this.backgroundMusic = new Audio('music.mp3');
-			this.backgroundMusic.loop = true;
-			this.backgroundMusic.volume = 0.3;
-			this.backgroundMusic.preload = 'auto';
-			console.log("MP3 background music recreated for restart");
-		} catch (error) {
-			console.warn("Failed to recreate background music:", error);
-		}
-
-		// Start background music after everything is set up (longer delay to ensure cleanup is complete)
-		setTimeout(async () => {
-			await this.startBackgroundMusic();
-		}, 300);
 	}
 
 	render() {
@@ -2059,20 +2379,20 @@ class PenguinGlider {
 				// Use the stored Y position if available, otherwise use default calculation
 				const mountainY =
 					this.mountainImageYOffset !== null ? this.mountainImageYOffset : this.waterLevel - mountainDistance;
-				
+
 				// Draw the mountain image first
 				this.drawImagePreserveAspect(this.images.moutain, x, mountainY, mountainWidth, mountainHeight, "top");
-				
+
 				// Add fade overlay at the base of the mountain to blend with background gradient
 				const fadeHeight = mountainHeight * 0.3; // Fade the bottom 30% of the mountain
 				const fadeStartY = mountainY + mountainHeight - fadeHeight;
-				
+
 				// Create fade gradient that matches the background gradient colors
 				const fadeGradient = this.ctx.createLinearGradient(0, fadeStartY, 0, mountainY + mountainHeight);
 				fadeGradient.addColorStop(0, "rgba(15, 31, 74, 0)"); // Transparent at top of fade
 				fadeGradient.addColorStop(0.5, "rgba(15, 31, 74, 0.3)"); // Semi-transparent middle
 				fadeGradient.addColorStop(1, "rgba(15, 31, 74, 0.7)"); // More opaque at bottom matching background
-				
+
 				// Apply the fade overlay
 				this.ctx.fillStyle = fadeGradient;
 				this.ctx.fillRect(x, fadeStartY, mountainWidth, fadeHeight);
@@ -2163,6 +2483,16 @@ class PenguinGlider {
 			this.drawFish(fish);
 		}
 
+		// Draw bears
+		for (let bear of this.bears) {
+			this.drawBear(bear);
+		}
+
+		// Draw bottles
+		for (let bottle of this.bottles) {
+			this.drawBottle(bottle);
+		}
+
 		// Draw particles
 		for (let particle of this.particles) {
 			// Use bubble image for blue particles (water/collection effects), otherwise simple rectangles
@@ -2239,7 +2569,6 @@ class PenguinGlider {
 			}
 			this.ctx.globalAlpha = 1;
 		}
-
 		// Draw final iceberg in foreground (on top of everything else including water)
 		for (let iceberg of this.icebergs) {
 			if (iceberg.isFinalIceberg && this.imagesReady && this.images["end-level"]) {
@@ -2394,6 +2723,65 @@ class PenguinGlider {
 		}
 	}
 
+	drawBear(bear) {
+		const x = bear.x;
+		const y = bear.y;
+		const w = bear.width;
+		const h = bear.height;
+
+		// Use bear image if loaded, otherwise fall back to drawn bear
+		if (this.imagesReady && this.images.bear) {
+			this.drawImagePreserveAspect(this.images.bear, x, y, w, h, "center");
+		} else {
+			// Fallback: simple brown bear shape
+			this.ctx.fillStyle = "#8B4513";
+			this.ctx.fillRect(x + w * 0.1, y + h * 0.3, w * 0.8, h * 0.6);
+
+			// Bear head
+			this.ctx.beginPath();
+			this.ctx.arc(x + w / 2, y + h * 0.2, w * 0.3, 0, Math.PI * 2);
+			this.ctx.fill();
+
+			// Bear ears
+			this.ctx.beginPath();
+			this.ctx.arc(x + w * 0.3, y + h * 0.1, w * 0.1, 0, Math.PI * 2);
+			this.ctx.fill();
+			this.ctx.beginPath();
+			this.ctx.arc(x + w * 0.7, y + h * 0.1, w * 0.1, 0, Math.PI * 2);
+			this.ctx.fill();
+		}
+	}
+
+	drawBottle(bottle) {
+		const x = bottle.x;
+		const y = bottle.y;
+		const w = bottle.width;
+		const h = bottle.height;
+
+		// Use bottle image if loaded, otherwise fall back to drawn bottle
+		if (this.imagesReady && this.images.bottle) {
+			// Apply simple red shadow glow like textShadow
+			this.ctx.save();
+			this.ctx.shadowColor = "rgba(255, 0, 0, 0.8)";
+			this.ctx.shadowBlur = 30; // Bigger glow effect
+			this.ctx.shadowOffsetX = 0;
+			this.ctx.shadowOffsetY = 0;
+			this.drawImagePreserveAspect(this.images.bottle, x, y, w, h, "center");
+			this.ctx.restore();
+		} else {
+			// Fallback: simple bottle shape
+			this.ctx.fillStyle = "#654321"; // Brown bottle color
+			this.ctx.fillRect(x + w * 0.3, y + h * 0.1, w * 0.4, h * 0.8); // Main bottle body
+
+			// Bottle neck
+			this.ctx.fillRect(x + w * 0.4, y, w * 0.2, h * 0.3);
+
+			// Bottle cap
+			this.ctx.fillStyle = "#333333";
+			this.ctx.fillRect(x + w * 0.35, y, w * 0.3, h * 0.15);
+		}
+	}
+
 	// Add hitbox visualization method
 	drawHitbox(x, y, width, height, color = "red", label = "") {
 		this.ctx.save();
@@ -2430,6 +2818,12 @@ class PenguinGlider {
 		for (let i = 0; i < this.fish.length; i++) {
 			const fish = this.fish[i];
 			this.drawHitbox(fish.x, fish.y, fish.width, fish.height, "yellow", `Fish ${i + 1}`);
+		}
+
+		// Draw bear hitboxes
+		for (let i = 0; i < this.bears.length; i++) {
+			const bear = this.bears[i];
+			this.drawHitbox(bear.x, bear.y, bear.width, bear.height, "red", `Bear ${i + 1}`);
 		}
 
 		// Draw water level line
@@ -2505,19 +2899,33 @@ class PenguinGlider {
 
 		try {
 			console.log("Starting MP3 background music, current paused state:", this.backgroundMusic.paused);
-			
-			// Reset to beginning if ended
-			if (this.backgroundMusic.ended) {
+
+			// Reset to beginning if ended or at end
+			if (this.backgroundMusic.ended || this.backgroundMusic.currentTime >= this.backgroundMusic.duration) {
 				this.backgroundMusic.currentTime = 0;
 			}
-			
+
+			// Ensure volume is set correctly
+			this.backgroundMusic.volume = 0.2; // Lower volume
+
+			// Clear any fade intervals that might be running
+			if (this.musicFadeInterval) {
+				clearInterval(this.musicFadeInterval);
+				this.musicFadeInterval = null;
+			}
+
 			await this.backgroundMusic.play();
 			console.log("MP3 background music started successfully");
 		} catch (error) {
 			console.error("Failed to start background music:", error);
 			// Handle autoplay policy restrictions
-			if (error.name === 'NotAllowedError') {
+			if (error.name === "NotAllowedError") {
 				console.log("Autoplay blocked by browser - music will start on user interaction");
+			}
+			// Try to recreate the audio element if it's corrupted
+			if (error.name === "AbortError" || error.name === "InvalidStateError") {
+				console.log("Audio element corrupted, attempting to recreate...");
+				this.initBackgroundMusic();
 			}
 		}
 	}
@@ -2530,6 +2938,13 @@ class PenguinGlider {
 				console.log("Stopping MP3 background music");
 				this.backgroundMusic.pause();
 				this.backgroundMusic.currentTime = 0; // Reset to beginning
+
+				// Clear any existing event listeners to prevent memory leaks
+				this.backgroundMusic.onended = null;
+				this.backgroundMusic.onerror = null;
+				this.backgroundMusic.onloadstart = null;
+				this.backgroundMusic.oncanplay = null;
+
 				console.log("MP3 background music stopped successfully");
 			} catch (error) {
 				console.warn("Error stopping background music:", error);
@@ -2540,22 +2955,32 @@ class PenguinGlider {
 	stopBackgroundMusicWithFade() {
 		if (this.backgroundMusic && !this.backgroundMusic.paused) {
 			console.log("Stopping MP3 background music with fade");
-			
+
+			// Store original volume to restore later
+			const originalVolume = this.backgroundMusic.volume;
+
 			// Create fade out effect
 			const fadeDuration = 1000; // 1 second
 			const fadeSteps = 20;
 			const stepTime = fadeDuration / fadeSteps;
 			const volumeStep = this.backgroundMusic.volume / fadeSteps;
-			
-			const fadeInterval = setInterval(() => {
-				if (this.backgroundMusic.volume > volumeStep) {
-					this.backgroundMusic.volume -= volumeStep;
+
+			// Clear any existing fade interval
+			if (this.fadeInterval) {
+				clearInterval(this.fadeInterval);
+			}
+
+			this.fadeInterval = setInterval(() => {
+				if (this.backgroundMusic && this.backgroundMusic.volume > volumeStep) {
+					this.backgroundMusic.volume = Math.max(0, this.backgroundMusic.volume - volumeStep);
 				} else {
-					this.backgroundMusic.volume = 0;
-					this.backgroundMusic.pause();
-					clearInterval(fadeInterval);
-					// Reset volume for next play
-					this.backgroundMusic.volume = 0.3;
+					if (this.backgroundMusic) {
+						this.backgroundMusic.pause();
+						this.backgroundMusic.currentTime = 0;
+						this.backgroundMusic.volume = originalVolume; // Restore original volume
+					}
+					clearInterval(this.fadeInterval);
+					this.fadeInterval = null;
 				}
 			}, stepTime);
 		}

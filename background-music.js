@@ -9,7 +9,7 @@ class BackgroundMusic {
 		this.oscillators = [];
 		this.scheduledNotes = [];
 		this.startTime = 0;
-		this.volume = 0.2; // Slightly louder for energetic music
+		this.volume = 0.15; // Slightly louder for energetic music
 
 		// Music parameters - Fast and playful
 		this.tempo = 150; // BPM - fast and energetic
