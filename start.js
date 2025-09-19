@@ -1,5 +1,11 @@
 // start.js - Animated intro for Penguin Glider
 window.addEventListener("DOMContentLoaded", function () {
+	// Create water-bubbles audio element
+	var bubbleAudio = new Audio("water-bubbles.mp3");
+	bubbleAudio.loop = true;
+	bubbleAudio.preload = "auto";
+	bubbleAudio.volume = 1; // Slightly lower volume for ambient effect
+
 	// Create white background overlay
 	var bg = document.createElement("div");
 	bg.id = "introBg";
@@ -125,7 +131,10 @@ window.addEventListener("DOMContentLoaded", function () {
 
 	// Function to shrink and move logo to top (never disappears)
 	function shrinkLogoToTopAndShowIntro() {
-		// Fade out loading circle and text smoothly
+		// Start playing water bubbles audio during intro
+		bubbleAudio.play().catch(e => console.log("Could not play bubbles audio:", e));
+		
+		// Fade background to game-like blue
 		var loadingCircle = document.getElementById("loadingCircle");
 		var loadingText = document.getElementById("loadingText");
 		if (loadingCircle) {
@@ -217,6 +226,20 @@ window.addEventListener("DOMContentLoaded", function () {
 				playBtn.style.transform = "translateX(-50%)";
 			});
 			playBtn.addEventListener("click", function () {
+				// Start crossfade from bubbles to main music
+				if (bubbleAudio && !bubbleAudio.paused) {
+					// Fade out bubbles over 1 second
+					var bubbleFadeOut = setInterval(() => {
+						if (bubbleAudio.volume > 0.05) {
+							bubbleAudio.volume = Math.max(0, bubbleAudio.volume - 0.05);
+						} else {
+							bubbleAudio.pause();
+							bubbleAudio.volume = 0.6; // Reset for potential future use
+							clearInterval(bubbleFadeOut);
+						}
+					}, 50);
+				}
+
 				// Remove all intro elements (including white bg and loading elements)
 				bg.remove();
 				logo.remove();

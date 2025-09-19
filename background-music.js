@@ -1,5 +1,5 @@
 // Background Music System for Penguin Glider
-// Uses Web Audio API to create ambient Arctic-themed music
+// Uses Web Audio API to create energetic synth-style music
 
 class BackgroundMusic {
 	constructor() {
@@ -9,12 +9,13 @@ class BackgroundMusic {
 		this.oscillators = [];
 		this.scheduledNotes = [];
 		this.startTime = 0;
-		this.volume = 0.15; // Quiet background music
+		this.volume = 0.15; // Slightly louder for energetic music
 
-		// Music parameters
-		this.tempo = 80; // BPM - slow and peaceful
+		// Music parameters - Fast and playful
+		this.tempo = 150; // BPM - fast and energetic
 		this.key = "C"; // C major - happy and bright
 		this.scale = [261.63, 293.66, 329.63, 349.23, 392.0, 440.0, 493.88, 523.25]; // C major scale (C4-C5)
+		this.pentatonicScale = [261.63, 293.66, 329.63, 392.0, 440.0]; // C pentatonic for catchy melodies
 
 		this.initAudio();
 	}
@@ -41,32 +42,50 @@ class BackgroundMusic {
 		}
 	}
 
-	// Create a gentle, ambient melody
+	// Create an energetic, synth-style melody
 	playMelody() {
 		if (!this.audioContext || !this.masterGain) return;
 
 		const now = this.audioContext.currentTime;
 		const noteLength = 60 / this.tempo; // Duration of one beat in seconds
+		const sixteenthNote = noteLength / 4; // Fast 16th note patterns
 
-		// Simple, peaceful melody pattern - inspired by gentle Arctic winds
+		// Energetic, playful melody pattern with synth arpeggios
 		const melodyPattern = [
-			{ note: 0, duration: 2, delay: 0 }, // C
-			{ note: 2, duration: 2, delay: 2 }, // E
-			{ note: 4, duration: 2, delay: 4 }, // G
-			{ note: 2, duration: 2, delay: 6 }, // E
-			{ note: 0, duration: 4, delay: 8 }, // C (longer)
+			// Fast ascending arpeggio run
+			{ note: 0, duration: 0.5, delay: 0 }, // C
+			{ note: 2, duration: 0.5, delay: 0.5 }, // E
+			{ note: 4, duration: 0.5, delay: 1 }, // G
+			{ note: 7, duration: 0.5, delay: 1.5 }, // C (octave)
+			{ note: 4, duration: 0.5, delay: 2 }, // G
+			{ note: 2, duration: 0.5, delay: 2.5 }, // E
+			{ note: 0, duration: 1, delay: 3 }, // C
 
-			{ note: 1, duration: 2, delay: 12 }, // D
-			{ note: 3, duration: 2, delay: 14 }, // F
-			{ note: 5, duration: 2, delay: 16 }, // A
-			{ note: 3, duration: 2, delay: 18 }, // F
-			{ note: 1, duration: 4, delay: 20 }, // D (longer)
+			// Playful bounce pattern
+			{ note: 1, duration: 0.5, delay: 4 }, // D
+			{ note: 3, duration: 0.5, delay: 4.5 }, // F
+			{ note: 1, duration: 0.5, delay: 5 }, // D
+			{ note: 5, duration: 1, delay: 5.5 }, // A
+			{ note: 3, duration: 0.5, delay: 6.5 }, // F
+			{ note: 1, duration: 0.5, delay: 7 }, // D
 
-			{ note: 4, duration: 2, delay: 24 }, // G
-			{ note: 2, duration: 2, delay: 26 }, // E
-			{ note: 0, duration: 2, delay: 28 }, // C
-			{ note: 2, duration: 2, delay: 30 }, // E
-			{ note: 4, duration: 8, delay: 32 }, // G (very long, peaceful ending)
+			// Fast descending run
+			{ note: 7, duration: 0.25, delay: 8 }, // C
+			{ note: 6, duration: 0.25, delay: 8.25 }, // B
+			{ note: 5, duration: 0.25, delay: 8.5 }, // A
+			{ note: 4, duration: 0.25, delay: 8.75 }, // G
+			{ note: 3, duration: 0.25, delay: 9 }, // F
+			{ note: 2, duration: 0.25, delay: 9.25 }, // E
+			{ note: 1, duration: 0.25, delay: 9.5 }, // D
+			{ note: 0, duration: 1.5, delay: 9.75 }, // C
+
+			// Catchy hook
+			{ note: 4, duration: 0.75, delay: 12 }, // G
+			{ note: 4, duration: 0.25, delay: 12.75 }, // G
+			{ note: 5, duration: 0.5, delay: 13 }, // A
+			{ note: 4, duration: 0.5, delay: 13.5 }, // G
+			{ note: 2, duration: 1, delay: 14 }, // E
+			{ note: 0, duration: 2, delay: 15 }, // C (longer)
 		];
 
 		melodyPattern.forEach((noteInfo, index) => {
@@ -77,8 +96,11 @@ class BackgroundMusic {
 			this.playNote(frequency, startTime, duration, "melody");
 		});
 
+		// Add harmony/counter-melody
+		this.playCounterMelody(now, noteLength);
+
 		// Schedule the next melody to loop
-		const totalDuration = 40 * noteLength; // Total pattern duration
+		const totalDuration = 16 * noteLength; // Total pattern duration
 		setTimeout(() => {
 			if (this.isPlaying) {
 				this.playMelody();
@@ -86,33 +108,60 @@ class BackgroundMusic {
 		}, totalDuration * 1000);
 	}
 
-	// Create ambient harmony/pad sounds
+	// Add a counter-melody for richness
+	playCounterMelody(startTime, noteLength) {
+		const counterPattern = [
+			{ note: 0, duration: 2, delay: 0 }, // C (low)
+			{ note: 2, duration: 2, delay: 2 }, // E (low)
+			{ note: 1, duration: 2, delay: 4 }, // D (low)
+			{ note: 3, duration: 2, delay: 6 }, // F (low)
+			{ note: 4, duration: 4, delay: 8 }, // G (low)
+			{ note: 2, duration: 2, delay: 12 }, // E (low)
+			{ note: 0, duration: 2, delay: 14 }, // C (low)
+		];
+
+		counterPattern.forEach((noteInfo) => {
+			const frequency = this.scale[noteInfo.note] * 0.5; // Lower octave
+			const noteStartTime = startTime + noteInfo.delay * noteLength;
+			const duration = noteInfo.duration * noteLength;
+
+			this.playNote(frequency, noteStartTime, duration, "counter");
+		});
+	}
+
+	// Create energetic bass and rhythm
 	playHarmony() {
 		if (!this.audioContext || !this.masterGain) return;
 
 		const now = this.audioContext.currentTime;
-		const chordDuration = 8; // 8 seconds per chord
+		const noteLength = 60 / this.tempo;
+		const patternDuration = 4; // 4 beats per pattern
 
-		// Simple chord progression: C - Am - F - G
-		const chords = [
-			[261.63, 329.63, 392.0], // C major (C-E-G)
-			[220.0, 261.63, 329.63], // A minor (A-C-E)
-			[174.61, 220.0, 261.63], // F major (F-A-C)
-			[196.0, 246.94, 293.66], // G major (G-B-D)
+		// Driving bass pattern
+		const bassPattern = [
+			{ note: 0, duration: 1, delay: 0 }, // C
+			{ note: 0, duration: 0.5, delay: 1 }, // C
+			{ note: 4, duration: 0.5, delay: 1.5 }, // G
+			{ note: 0, duration: 1, delay: 2 }, // C
+			{ note: 3, duration: 1, delay: 3 }, // F
 		];
 
-		chords.forEach((chord, chordIndex) => {
-			const chordStartTime = now + chordIndex * chordDuration;
+		// Play bass pattern multiple times with variation
+		for (let cycle = 0; cycle < 4; cycle++) {
+			bassPattern.forEach((noteInfo) => {
+				const frequency = this.scale[noteInfo.note] * 0.25; // Very low bass
+				const startTime = now + (cycle * patternDuration + noteInfo.delay) * noteLength;
+				const duration = noteInfo.duration * noteLength;
 
-			chord.forEach((frequency, noteIndex) => {
-				// Stagger the chord notes slightly for a more natural sound
-				const noteStartTime = chordStartTime + noteIndex * 0.1;
-				this.playNote(frequency * 0.5, noteStartTime, chordDuration, "harmony"); // Lower octave
+				this.playNote(frequency, startTime, duration, "bass");
 			});
-		});
+		}
 
-		// Schedule the next chord progression
-		const totalDuration = chords.length * chordDuration;
+		// Add rhythmic chord stabs
+		this.playChordStabs(now, noteLength);
+
+		// Schedule the next bass line
+		const totalDuration = 16 * noteLength;
 		setTimeout(() => {
 			if (this.isPlaying) {
 				this.playHarmony();
@@ -120,7 +169,31 @@ class BackgroundMusic {
 		}, totalDuration * 1000);
 	}
 
-	// Play a single note with specified parameters
+	// Add percussive chord stabs for rhythm
+	playChordStabs(startTime, noteLength) {
+		const stabPattern = [
+			{ chord: [2, 4, 6], delay: 2 }, // E-G-B
+			{ chord: [2, 4, 6], delay: 2.5 }, // E-G-B
+			{ chord: [1, 3, 5], delay: 6 }, // D-F-A
+			{ chord: [1, 3, 5], delay: 6.5 }, // D-F-A
+			{ chord: [0, 2, 4], delay: 10 }, // C-E-G
+			{ chord: [0, 2, 4], delay: 10.5 }, // C-E-G
+			{ chord: [4, 6, 1], delay: 14 }, // G-B-D
+			{ chord: [4, 6, 1], delay: 14.5 }, // G-B-D
+		];
+
+		stabPattern.forEach((stabInfo) => {
+			stabInfo.chord.forEach((noteIndex, chordIndex) => {
+				const frequency = this.scale[noteIndex] * 0.75; // Mid-range
+				const noteStartTime = startTime + stabInfo.delay * noteLength + chordIndex * 0.01; // Slight spread
+				const duration = 0.3 * noteLength; // Short, punchy
+
+				this.playNote(frequency, noteStartTime, duration, "stab");
+			});
+		});
+	}
+
+	// Play a single note with synth-style parameters
 	playNote(frequency, startTime, duration, type = "melody") {
 		if (!this.audioContext || !this.masterGain) return;
 
@@ -134,26 +207,43 @@ class BackgroundMusic {
 		filterNode.connect(gainNode);
 		gainNode.connect(this.masterGain);
 
-		// Configure oscillator
+		// Configure synth-style oscillator and filter based on type
 		if (type === "melody") {
-			oscillator.type = "sine"; // Pure, gentle tone for melody
+			oscillator.type = "square"; // Classic synth lead sound
 			filterNode.type = "lowpass";
-			filterNode.frequency.setValueAtTime(2000, startTime); // Soft filter
-		} else if (type === "harmony") {
-			oscillator.type = "triangle"; // Warmer tone for harmony
+			filterNode.frequency.setValueAtTime(3000, startTime);
+			filterNode.Q.setValueAtTime(2, startTime); // Resonant filter
+		} else if (type === "counter") {
+			oscillator.type = "sawtooth"; // Rich harmonic content
 			filterNode.type = "lowpass";
-			filterNode.frequency.setValueAtTime(800, startTime); // More filtered for background
+			filterNode.frequency.setValueAtTime(1500, startTime);
+			filterNode.Q.setValueAtTime(1.5, startTime);
+		} else if (type === "bass") {
+			oscillator.type = "triangle"; // Clean bass sound
+			filterNode.type = "lowpass";
+			filterNode.frequency.setValueAtTime(400, startTime);
+			filterNode.Q.setValueAtTime(0.5, startTime);
+		} else if (type === "stab") {
+			oscillator.type = "square"; // Punchy chord stabs
+			filterNode.type = "bandpass";
+			filterNode.frequency.setValueAtTime(800, startTime);
+			filterNode.Q.setValueAtTime(3, startTime); // Very resonant
+		} else if (type === "arpeggio") {
+			oscillator.type = "sawtooth"; // Bright arpeggio sound
+			filterNode.type = "lowpass";
+			filterNode.frequency.setValueAtTime(4000, startTime);
+			filterNode.Q.setValueAtTime(2.5, startTime); // Bright and resonant
 		}
 
 		oscillator.frequency.setValueAtTime(frequency, startTime);
 
-		// Configure envelope (ADSR)
-		const attackTime = 0.1;
-		const decayTime = 0.2;
-		const sustainLevel = type === "melody" ? 0.3 : 0.15; // Melody louder than harmony
-		const releaseTime = 0.5;
+		// Synth-style envelope (ADSR) - faster attack/release for electronic feel
+		const attackTime = type === "stab" ? 0.01 : type === "arpeggio" ? 0.02 : 0.05; // Very fast attack for stabs and arpeggios
+		const decayTime = type === "bass" ? 0.1 : 0.08;
+		const sustainLevel = type === "melody" ? 0.4 : type === "bass" ? 0.6 : type === "stab" ? 0.5 : type === "arpeggio" ? 0.3 : 0.25;
+		const releaseTime = type === "stab" ? 0.1 : type === "arpeggio" ? 0.05 : 0.2; // Quick release for punchy sounds
 
-		const peakLevel = type === "melody" ? 0.4 : 0.2;
+		const peakLevel = type === "melody" ? 0.5 : type === "bass" ? 0.7 : type === "stab" ? 0.6 : type === "arpeggio" ? 0.4 : 0.3;
 
 		// Attack
 		gainNode.gain.setValueAtTime(0, startTime);
@@ -166,6 +256,21 @@ class BackgroundMusic {
 		const releaseStartTime = startTime + duration - releaseTime;
 		gainNode.gain.setValueAtTime(sustainLevel, releaseStartTime);
 		gainNode.gain.linearRampToValueAtTime(0, startTime + duration);
+
+		// Add filter modulation for movement
+		if (type === "melody" || type === "counter" || type === "arpeggio") {
+			const modDepth = type === "arpeggio" ? 800 : 500;
+			const modRate = type === "arpeggio" ? 8 : 4; // Hz - faster for arpeggios
+			const modStartTime = startTime + attackTime;
+			const modDuration = duration - attackTime - releaseTime;
+
+			for (let t = 0; t < modDuration; t += 0.1) {
+				const time = modStartTime + t;
+				const modValue = Math.sin(2 * Math.PI * modRate * t) * modDepth;
+				const baseFreq = type === "melody" ? 3000 : type === "arpeggio" ? 4000 : 1500;
+				filterNode.frequency.setValueAtTime(baseFreq + modValue, time);
+			}
+		}
 
 		// Start and stop
 		oscillator.start(startTime);
@@ -185,47 +290,106 @@ class BackgroundMusic {
 		this.oscillators.push({ oscillator, gainNode, filterNode });
 	}
 
-	// Add some subtle ambient sounds (wind-like effects)
+	// Add energetic arpeggios and sequences
 	playAmbientSounds() {
 		if (!this.audioContext || !this.masterGain) return;
 
+		this.playArpeggio();
+		this.playPercussion();
+	}
+
+	// Add fast arpeggios for energy
+	playArpeggio() {
 		const now = this.audioContext.currentTime;
+		const noteLength = 60 / this.tempo;
+		const sixteenthNote = noteLength / 4;
 
-		// Create subtle wind-like noise
-		const bufferSize = this.audioContext.sampleRate * 4; // 4 seconds of audio
-		const buffer = this.audioContext.createBuffer(1, bufferSize, this.audioContext.sampleRate);
-		const data = buffer.getChannelData(0);
+		// Fast arpeggio pattern
+		const arpeggioPattern = [
+			0, 2, 4, 7, 4, 2, 0, 2, // C-E-G-C-G-E-C-E
+			1, 3, 5, 7, 5, 3, 1, 3, // D-F-A-C-A-F-D-F
+		];
 
-		// Generate filtered noise
-		for (let i = 0; i < bufferSize; i++) {
-			data[i] = (Math.random() * 2 - 1) * 0.1; // Very quiet noise
-		}
+		arpeggioPattern.forEach((noteIndex, i) => {
+			const frequency = this.scale[noteIndex] * 2; // Higher octave
+			const startTime = now + i * sixteenthNote * 2; // Every 8th note
+			const duration = sixteenthNote * 1.5;
 
-		const source = this.audioContext.createBufferSource();
+			this.playNote(frequency, startTime, duration, "arpeggio");
+		});
+
+		// Schedule next arpeggio
+		setTimeout(() => {
+			if (this.isPlaying) {
+				this.playArpeggio();
+			}
+		}, (arpeggioPattern.length * sixteenthNote * 2) * 1000);
+	}
+
+	// Add subtle percussion-like sounds
+	playPercussion() {
+		const now = this.audioContext.currentTime;
+		const noteLength = 60 / this.tempo;
+
+		// Create kick-like low frequency pulse
+		const kickTimes = [0, 2, 4, 6, 8, 10, 12, 14]; // Every 2 beats
+		const snareTimes = [2, 6, 10, 14]; // Backbeat
+
+		kickTimes.forEach((time) => {
+			this.playPercussiveHit(60, now + time * noteLength, 0.1, "kick");
+		});
+
+		snareTimes.forEach((time) => {
+			this.playPercussiveHit(200, now + time * noteLength, 0.05, "snare");
+		});
+
+		// Schedule next percussion
+		setTimeout(() => {
+			if (this.isPlaying) {
+				this.playPercussion();
+			}
+		}, 16 * noteLength * 1000);
+	}
+
+	// Create percussive hits
+	playPercussiveHit(frequency, startTime, duration, type) {
+		const oscillator = this.audioContext.createOscillator();
 		const gainNode = this.audioContext.createGain();
 		const filterNode = this.audioContext.createBiquadFilter();
 
-		source.buffer = buffer;
-		source.loop = true;
-
-		// Heavy filtering to make it sound like distant wind
-		filterNode.type = "lowpass";
-		filterNode.frequency.setValueAtTime(200, now);
-		filterNode.Q.setValueAtTime(1, now);
-
-		source.connect(filterNode);
+		oscillator.connect(filterNode);
 		filterNode.connect(gainNode);
 		gainNode.connect(this.masterGain);
 
-		// Very quiet ambient volume
-		gainNode.gain.setValueAtTime(0.05, now);
+		if (type === "kick") {
+			oscillator.type = "sine";
+			filterNode.type = "lowpass";
+			filterNode.frequency.setValueAtTime(100, startTime);
+		} else if (type === "snare") {
+			oscillator.type = "square";
+			filterNode.type = "highpass";
+			filterNode.frequency.setValueAtTime(300, startTime);
+		}
 
-		source.start(now);
+		oscillator.frequency.setValueAtTime(frequency, startTime);
 
-		// Store reference for cleanup
-		this.ambientSource = source;
-		this.ambientGain = gainNode;
-		this.ambientFilter = filterNode;
+		// Very short, punchy envelope
+		gainNode.gain.setValueAtTime(0, startTime);
+		gainNode.gain.linearRampToValueAtTime(0.3, startTime + 0.01);
+		gainNode.gain.exponentialRampToValueAtTime(0.001, startTime + duration);
+
+		oscillator.start(startTime);
+		oscillator.stop(startTime + duration);
+
+		oscillator.onended = () => {
+			try {
+				oscillator.disconnect();
+				gainNode.disconnect();
+				filterNode.disconnect();
+			} catch (e) {
+				// Ignore cleanup errors
+			}
+		};
 	}
 
 	// Check if audio context is healthy
