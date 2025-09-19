@@ -56,7 +56,7 @@ window.addEventListener("DOMContentLoaded", function () {
 	var tempGame = null;
 	var logoAnimationTriggered = false;
 	var logoStartTime = Date.now(); // Track when logo first appears
-	var minimumLogoDisplayTime = 5000; // 5 seconds minimum display time
+	var minimumLogoDisplayTime = 4000; // 4 seconds minimum display time
 
 	// Start image loading immediately when DOM is loaded
 	function initImageLoading() {
