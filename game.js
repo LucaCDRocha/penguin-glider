@@ -1542,6 +1542,7 @@ class PenguinGlider {
 		// Create fish icon
 		this.fishIcon = document.createElement("img");
 		this.fishIcon.src = "img/fish4.png";
+		this.fishIcon.className = "fish-icon"; // Add class for CSS targeting
 		this.fishIcon.style.height = "clamp(24px, 4vw, 32px)";
 		this.fishIcon.style.marginRight = "8px";
 
@@ -1551,6 +1552,7 @@ class PenguinGlider {
 
 		// Create message below
 		this.scoreMessage = document.createElement("div");
+		this.scoreMessage.className = "score-message"; // Add class for CSS targeting
 		this.scoreMessage.textContent = `collect at least ${this.minFishRequired}!`;
 		this.scoreMessage.style.color = "#000000";
 		this.scoreMessage.style.fontSize = "clamp(16px, 3vw, 24px)";
@@ -1583,6 +1585,7 @@ class PenguinGlider {
 	createProgressBar() {
 		// Create container for progress bar
 		this.progressBarContainer = document.createElement("div");
+		this.progressBarContainer.className = "progress-bar-container"; // Add class for CSS targeting
 		this.progressBarContainer.style.position = "fixed";
 		this.progressBarContainer.style.top = "max(20px, env(safe-area-inset-top, 20px))";
 		this.progressBarContainer.style.left = "50%";
@@ -1596,6 +1599,7 @@ class PenguinGlider {
 
 		// Create progress bar track container (takes most of the space)
 		this.progressBarTrack = document.createElement("div");
+		this.progressBarTrack.className = "progress-bar-track"; // Add class for CSS targeting
 		this.progressBarTrack.style.position = "relative";
 		this.progressBarTrack.style.width = "100%";
 		this.progressBarTrack.style.height = "28px";
@@ -1615,6 +1619,7 @@ class PenguinGlider {
 		// Create moving penguin indicator
 		this.progressPenguin = document.createElement("img");
 		this.progressPenguin.src = "img/penguin.png";
+		this.progressPenguin.className = "progress-penguin"; // Add class for CSS targeting
 		this.progressPenguin.style.position = "absolute";
 		this.progressPenguin.style.width = "36px";
 		this.progressPenguin.style.height = "36px";
@@ -1635,6 +1640,7 @@ class PenguinGlider {
 		// Create penguin-baby icon (positioned at end)
 		this.progressBabyIcon = document.createElement("img");
 		this.progressBabyIcon.src = "img/penguin-baby.png";
+		this.progressBabyIcon.className = "progress-baby-penguin"; // Add class for CSS targeting
 		this.progressBabyIcon.style.width = "50px";
 		this.progressBabyIcon.style.height = "50px";
 		this.progressBabyIcon.style.objectFit = "contain";

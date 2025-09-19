@@ -437,110 +437,24 @@
 			/* Mobile specific positioning for timer and score below progress bar */
 			@media (hover: none) and (pointer: coarse) {
 				#gameTimer {
-					top: calc(max(20px, env(safe-area-inset-top, 20px)) + 80px) !important;
-					left: 20px !important;
-				}
-
-				/* Target the dynamically created score container */
-				#gameScore {
-					top: calc(max(20px, env(safe-area-inset-top, 20px)) + 80px) !important;
-				}
-
-				.top-ui {
-					position: fixed !important;
-					top: calc(max(20px, env(safe-area-inset-top, 20px)) + 80px) !important;
-					right: 20px !important;
-					left: auto !important;
-					width: auto !important;
-					padding: 0 !important;
-					margin: 0 !important;
-				}
-
-				.score {
-					margin: 0 !important;
-				}
-
-				.instructions {
-					display: none !important;
-				}
-			}
-
-			@media (max-width: 768px) {
-				#gameTimer {
-					top: calc(max(20px, env(safe-area-inset-top, 20px)) + 80px) !important;
-					left: 20px !important;
-				}
-
-				/* Target the dynamically created score container */
-				#gameScore {
-					top: calc(max(20px, env(safe-area-inset-top, 20px)) + 80px) !important;
-				}
-
-				.top-ui {
-					position: fixed !important;
-					top: calc(max(20px, env(safe-area-inset-top, 20px)) + 80px) !important;
-					right: 20px !important;
-					left: auto !important;
-					width: auto !important;
-					padding: 0 !important;
-					margin: 0 !important;
-				}
-
-				.score {
-					margin: 0 !important;
-				}
-
-				.instructions {
-					display: none !important;
-				}
-			}
-
-			/* Very small screens adjustments */
-			@media (max-width: 480px) {
-				#gameTimer {
-					top: calc(max(20px, env(safe-area-inset-top, 20px)) + 70px) !important;
-					left: 15px !important;
-					font-size: clamp(28px, 5vw, 36px) !important;
-				}
-
-				/* Target the dynamically created score container */
-				#gameScore {
-					top: calc(max(20px, env(safe-area-inset-top, 20px)) + 70px) !important;
-					right: 15px !important;
-				}
-
-				.top-ui {
-					position: fixed !important;
-					top: calc(max(20px, env(safe-area-inset-top, 20px)) + 70px) !important;
-					right: 15px !important;
-					left: auto !important;
-					width: auto !important;
-					padding: 0 !important;
-					margin: 0 !important;
-				}
-
-				.score {
-					margin: 0 !important;
-					font-size: clamp(20px, 5vw, 28px) !important;
-				}
-
-				.instructions {
-					display: none !important;
-				}
-			}
-
-			/* Landscape orientation on mobile */
-			@media (max-height: 500px) and (orientation: landscape) {
-				#gameTimer {
 					top: calc(max(20px, env(safe-area-inset-top, 20px)) + 60px) !important;
 					left: 15px !important;
-					font-size: clamp(24px, 4vw, 32px) !important;
+					font-size: clamp(24px, 4.5vw, 32px) !important;
 				}
 
 				/* Target the dynamically created score container */
 				#gameScore {
 					top: calc(max(20px, env(safe-area-inset-top, 20px)) + 60px) !important;
 					right: 15px !important;
+				}
+
+				/* Make score elements smaller */
+				#gameScore div {
+					font-size: clamp(24px, 4.5vw, 32px) !important;
+				}
+
+				#gameScore div:last-child {
+					font-size: clamp(12px, 2.5vw, 16px) !important;
 				}
 
 				.top-ui {
@@ -556,10 +470,252 @@
 				.score {
 					margin: 0 !important;
 					font-size: clamp(18px, 4vw, 24px) !important;
+					padding: clamp(6px, 1.5vw, 8px) clamp(10px, 2.5vw, 12px) !important;
 				}
 
 				.instructions {
 					display: none !important;
+				}
+			}
+
+			@media (max-width: 768px) {
+				#gameTimer {
+					top: calc(max(20px, env(safe-area-inset-top, 20px)) + 60px) !important;
+					left: 15px !important;
+					font-size: clamp(24px, 4.5vw, 32px) !important;
+				}
+
+				/* Target the dynamically created score container */
+				#gameScore {
+					top: calc(max(20px, env(safe-area-inset-top, 20px)) + 60px) !important;
+					right: 15px !important;
+				}
+
+				/* Make score elements smaller */
+				#gameScore div {
+					font-size: clamp(24px, 4.5vw, 32px) !important;
+				}
+
+				#gameScore div:last-child {
+					font-size: clamp(12px, 2.5vw, 16px) !important;
+				}
+
+				.top-ui {
+					position: fixed !important;
+					top: calc(max(20px, env(safe-area-inset-top, 20px)) + 60px) !important;
+					right: 15px !important;
+					left: auto !important;
+					width: auto !important;
+					padding: 0 !important;
+					margin: 0 !important;
+				}
+
+				.score {
+					margin: 0 !important;
+					font-size: clamp(18px, 4vw, 24px) !important;
+					padding: clamp(6px, 1.5vw, 8px) clamp(10px, 2.5vw, 12px) !important;
+				}
+
+				.instructions {
+					display: none !important;
+				}
+			}
+
+			/* Very small screens adjustments */
+			@media (max-width: 480px) {
+				#gameTimer {
+					top: calc(max(20px, env(safe-area-inset-top, 20px)) + 50px) !important;
+					left: 10px !important;
+					font-size: clamp(20px, 4vw, 28px) !important;
+				}
+
+				/* Target the dynamically created score container */
+				#gameScore {
+					top: calc(max(20px, env(safe-area-inset-top, 20px)) + 50px) !important;
+					right: 10px !important;
+				}
+
+				/* Make score elements smaller */
+				#gameScore div {
+					font-size: clamp(20px, 4vw, 28px) !important;
+				}
+
+				#gameScore div:last-child {
+					font-size: clamp(10px, 2vw, 14px) !important;
+				}
+
+				.top-ui {
+					position: fixed !important;
+					top: calc(max(20px, env(safe-area-inset-top, 20px)) + 50px) !important;
+					right: 10px !important;
+					left: auto !important;
+					width: auto !important;
+					padding: 0 !important;
+					margin: 0 !important;
+				}
+
+				.score {
+					margin: 0 !important;
+					font-size: clamp(16px, 3.5vw, 20px) !important;
+					padding: clamp(4px, 1vw, 6px) clamp(8px, 2vw, 10px) !important;
+				}
+
+				.instructions {
+					display: none !important;
+				}
+			}
+
+			/* Landscape orientation on mobile */
+			@media (max-height: 500px) and (orientation: landscape) {
+				#gameTimer {
+					top: calc(max(20px, env(safe-area-inset-top, 20px)) + 45px) !important;
+					left: 10px !important;
+					font-size: clamp(18px, 3.5vw, 24px) !important;
+				}
+
+				/* Target the dynamically created score container */
+				#gameScore {
+					top: calc(max(20px, env(safe-area-inset-top, 20px)) + 45px) !important;
+					right: 10px !important;
+				}
+
+				/* Make score elements smaller */
+				#gameScore div {
+					font-size: clamp(18px, 3.5vw, 24px) !important;
+				}
+
+				#gameScore div:last-child {
+					font-size: clamp(9px, 1.8vw, 12px) !important;
+				}
+
+				.top-ui {
+					position: fixed !important;
+					top: calc(max(20px, env(safe-area-inset-top, 20px)) + 45px) !important;
+					right: 10px !important;
+					left: auto !important;
+					width: auto !important;
+					padding: 0 !important;
+					margin: 0 !important;
+				}
+
+				.score {
+					margin: 0 !important;
+					font-size: clamp(14px, 3vw, 18px) !important;
+					padding: clamp(3px, 0.8vw, 5px) clamp(6px, 1.5vw, 8px) !important;
+				}
+
+				.instructions {
+					display: none !important;
+				}
+			}
+
+			/* Mobile-specific progress bar sizing */
+			@media (hover: none) and (pointer: coarse), (max-width: 768px) {
+				.progress-bar-container {
+					width: 320px !important;
+					max-width: 75vw !important;
+					gap: 10px !important;
+				}
+
+				.progress-bar-track {
+					height: 20px !important;
+					border-radius: 10px !important;
+					border: 2px solid #000000 !important;
+				}
+
+				.progress-penguin {
+					width: 24px !important;
+					height: 24px !important;
+					top: -14px !important;
+				}
+
+				.progress-baby-penguin {
+					width: 32px !important;
+					height: 32px !important;
+				}
+
+				.score-message {
+					font-size: clamp(14px, 3.5vw, 18px) !important;
+				}
+			}
+
+			@media (max-width: 480px) {
+				.progress-bar-container {
+					width: 280px !important;
+					max-width: 70vw !important;
+					gap: 8px !important;
+				}
+
+				.progress-bar-track {
+					height: 18px !important;
+					border-radius: 9px !important;
+					border: 2px solid #000000 !important;
+				}
+
+				.progress-penguin {
+					width: 20px !important;
+					height: 20px !important;
+					top: -12px !important;
+				}
+
+				.progress-baby-penguin {
+					width: 28px !important;
+					height: 28px !important;
+				}
+
+				.score-message {
+					font-size: clamp(12px, 3vw, 16px) !important;
+				}
+			}
+
+			@media (max-height: 500px) and (orientation: landscape) {
+				.progress-bar-container {
+					width: 250px !important;
+					max-width: 60vw !important;
+					gap: 6px !important;
+				}
+
+				.progress-bar-track {
+					height: 16px !important;
+					border-radius: 8px !important;
+					border: 2px solid #000000 !important;
+				}
+
+				.progress-penguin {
+					width: 18px !important;
+					height: 18px !important;
+					top: -10px !important;
+				}
+
+				.progress-baby-penguin {
+					width: 24px !important;
+					height: 24px !important;
+				}
+
+				.score-message {
+					font-size: clamp(11px, 2.5vw, 14px) !important;
+				}
+			}
+
+			/* Mobile-specific fish icon sizing */
+			@media (hover: none) and (pointer: coarse), (max-width: 768px) {
+				.fish-icon {
+					height: clamp(18px, 3vw, 24px) !important;
+					margin-right: 6px !important;
+				}
+			}
+
+			@media (max-width: 480px) {
+				.fish-icon {
+					height: clamp(16px, 2.5vw, 20px) !important;
+					margin-right: 4px !important;
+				}
+			}
+
+			@media (max-height: 500px) and (orientation: landscape) {
+				.fish-icon {
+					height: clamp(14px, 2vw, 18px) !important;
+					margin-right: 4px !important;
 				}
 			}
 		</style>
