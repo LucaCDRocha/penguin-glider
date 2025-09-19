@@ -2,4 +2,4 @@
 
 Penguin Glider is a 2D platform game that follows the journey of a mother penguin across a fragmented, hostile landscape of ice in her quest to bring food back to her newborn chick. The visual identity of the game emerges from a hybrid process, where hand-drawn pencil sketches were digitized to create a playful, childlike environment. Fast-paced synth music underscores the urgency of her mission, while the mechanics invite both a sense of accomplishment and emotional investment. Players embody the mother’s determination as they navigate icebergs, slippery terrain, and polar bears, making quick decisions to collect enough fish before time runs out.
 At the same time, the game introduces an awareness of human impact on fragile ecosystems. Plastic waste hinders the penguin’s journey, diminishing her hard-earned resources and mirroring the pressures faced by wildlife in real environments. With Penguin Glider, we aim to provide an experience that balances challenge and accessibility, while also sparking reflection on environmental issues. 
-Play (here)[https://lucacdrocha.github.io/penguin-glider/]! 
+Play [here](https://lucacdrocha.github.io/penguin-glider/)!
