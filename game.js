@@ -1,10 +1,11 @@
 // Penguin Glider Game
 class PenguinGlider {
-	constructor() {
+	constructor(autoStart = true) {
 		// Debug settings
 		this.showHitboxes = false; // Set to true to show collision hitboxes
 		this.timer = new GameTimer();
 		this.fromRestart = false;
+		this.autoStart = autoStart; // Control whether to auto-start timer when images load
 
 		this.canvas = document.getElementById("gameCanvas");
 		this.ctx = this.canvas.getContext("2d");
@@ -67,7 +68,7 @@ class PenguinGlider {
 		};
 
 		// Level progression system
-		this.levelLength = 2000; // Total distance to complete the level (in pixels)
+		this.levelLength = 10000; // Total distance to complete the level (in pixels)
 		this.startPosition = 0; // Starting camera position
 		this.distanceTraveled = 0; // How far the player has progressed
 		this.levelProgress = 0; // Percentage of level completed (0-1)
@@ -99,6 +100,13 @@ class PenguinGlider {
 		this.audioContext = null;
 		this.sounds = {};
 		this.glideTimer = 0;
+
+		// Background music system
+		this.backgroundMusic = null;
+		this.musicKeyPressed = false; // Track M key press state
+		if (typeof BackgroundMusic !== "undefined") {
+			this.backgroundMusic = new BackgroundMusic();
+		}
 
 		// Image loading system
 		this.images = {};
@@ -161,9 +169,10 @@ class PenguinGlider {
 					this.init(); // Start the game once all images are loaded
 					// Set up timer to end game when time runs out
 					this.timer.setTimeUpCallback(() => this.gameOver());
-					// Initial timer start
-					if (!this.fromRestart) {
+					// Initial timer start - only if autoStart is enabled and not from restart
+					if (this.autoStart && !this.fromRestart) {
 						this.timer.start();
+						this.startBackgroundMusic();
 					}
 				}
 			};
@@ -173,6 +182,12 @@ class PenguinGlider {
 				if (this.imagesLoaded === this.totalImages) {
 					this.imagesReady = true;
 					this.init(); // Start the game even if some images failed
+					// Set up timer but don't auto-start if autoStart is disabled
+					this.timer.setTimeUpCallback(() => this.gameOver());
+					if (this.autoStart && !this.fromRestart) {
+						this.timer.start();
+						this.startBackgroundMusic();
+					}
 				}
 			};
 			img.src = `img/${imageName}`;
@@ -791,7 +806,7 @@ class PenguinGlider {
 		if (this.keys["ArrowRight"] || this.keys["KeyD"]) {
 			this.penguin.velocityX = Math.min(this.penguin.velocityX + acceleration, maxSpeed);
 		} // Jump/Glide
-		if ((this.keys["ArrowUp"] || this.keys["KeyW"]) && this.penguin.onIceberg) {
+		if ((this.keys["ArrowUp"] || this.keys["KeyW"] || this.keys["Space"]) && this.penguin.onIceberg) {
 			this.penguin.velocityY = this.jumpPower;
 			this.penguin.onIceberg = false;
 			this.penguin.gliding = true;
@@ -800,7 +815,11 @@ class PenguinGlider {
 		}
 
 		// Gliding control
-		if ((this.keys["ArrowUp"] || this.keys["KeyW"]) && !this.penguin.onIceberg && this.penguin.velocityY > 0) {
+		if (
+			(this.keys["ArrowUp"] || this.keys["KeyW"] || this.keys["Space"]) &&
+			!this.penguin.onIceberg &&
+			this.penguin.velocityY > 0
+		) {
 			this.penguin.velocityY += this.gravity * 0.3 * deltaMultiplier; // Slower fall when gliding
 			this.penguin.gliding = true;
 
@@ -814,6 +833,14 @@ class PenguinGlider {
 		} else {
 			this.penguin.gliding = false;
 			this.glideTimer = 0;
+		}
+
+		// Music toggle (M key) - only trigger once per key press
+		if (this.keys["KeyM"] && !this.musicKeyPressed) {
+			this.toggleBackgroundMusic();
+			this.musicKeyPressed = true;
+		} else if (!this.keys["KeyM"]) {
+			this.musicKeyPressed = false;
 		}
 	}
 
@@ -957,7 +984,10 @@ class PenguinGlider {
 		this.distanceTraveled = Math.max(0, this.camera.x - this.startPosition);
 
 		// Calculate progress percentage (0-1)
-		this.levelProgress = Math.min(1, this.distanceTraveled / this.levelLength);
+		const actualProgress = Math.min(1, this.distanceTraveled / this.levelLength);
+
+		// Show progress bar slightly ahead of actual position (add 5% boost, but don't exceed 100%)
+		this.levelProgress = Math.min(1, actualProgress * 1.05);
 
 		// Update progress bar display
 		this.updateProgressBar();
@@ -1319,6 +1349,31 @@ class PenguinGlider {
 			const colliderWidth = iceberg.colliderWidth !== undefined ? iceberg.colliderWidth : iceberg.width;
 			const colliderHeight = iceberg.colliderHeight !== undefined ? iceberg.colliderHeight : iceberg.height;
 
+			// Check for any collision with the final iceberg to complete the game
+			if (iceberg.isFinalIceberg) {
+				const penguinCollidesFinalIceberg =
+					this.penguin.x < colliderX + colliderWidth &&
+					this.penguin.x + this.penguin.width > colliderX &&
+					this.penguin.y < colliderY + colliderHeight &&
+					this.penguin.y + this.penguin.height > colliderY;
+
+				if (penguinCollidesFinalIceberg && !this.levelCompleted) {
+					// Penguin touched the final iceberg! Complete the level immediately
+					this.levelCompleted = true;
+
+					// Check win conditions: enough fish and time remaining
+					const hasEnoughFish = this.score >= this.minFishRequired;
+					const hasTimeLeft = this.timer.remainingTime > 0;
+
+					if (hasEnoughFish && hasTimeLeft) {
+						this.levelWin();
+					} else {
+						this.gameOver(); // Failed to meet win conditions
+					}
+					return; // Exit early since game is over
+				}
+			}
+
 			// Check if penguin is on top of iceberg (more precise landing detection)
 			if (
 				this.penguin.x + this.penguin.width > colliderX + 5 && // Small margin from edges
@@ -1419,10 +1474,11 @@ class PenguinGlider {
 
 	gameOver() {
 		this.gameState = "gameOver";
+		this.stopBackgroundMusicWithFade();
 		this.gameOverElement.style.display = "block";
-		
+
 		// Create and position the try again button image
-		const tryAgainBtn = document.createElement('img');
+		const tryAgainBtn = document.createElement("img");
 		tryAgainBtn.src = "img/try-again.png";
 		tryAgainBtn.style.position = "absolute";
 		tryAgainBtn.style.left = "50%";
@@ -1438,17 +1494,17 @@ class PenguinGlider {
 		tryAgainBtn.style.transition = "transform 0.2s ease";
 
 		// Hover reaction: slightly enlarge
-		tryAgainBtn.addEventListener('mouseenter', () => {
+		tryAgainBtn.addEventListener("mouseenter", () => {
 			tryAgainBtn.style.transform = "translate(-50%, -50%) scale(1.1)";
 		});
-		tryAgainBtn.addEventListener('mouseleave', () => {
+		tryAgainBtn.addEventListener("mouseleave", () => {
 			tryAgainBtn.style.transform = "translate(-50%, -50%) scale(1)";
 		});
 
 		tryAgainBtn.onclick = restartGame;
-		
+
 		// Create loss reason text with timer font style
-		const lossReason = document.createElement('p');
+		const lossReason = document.createElement("p");
 		lossReason.style.fontFamily = "'Share Tech Mono', monospace";
 		lossReason.style.position = "absolute";
 		lossReason.style.left = "50%";
@@ -1457,14 +1513,14 @@ class PenguinGlider {
 		lossReason.style.transform = "translate(-50%, -50%)";
 		lossReason.style.fontSize = "clamp(14px, 3.5vw, 22px)";
 		lossReason.textContent = this.penguin.y > this.waterLevel ? "OOOOPS you fell in the icy water!" : "TIME'S UP!";
-		
+
 		// Clear any existing content
-		this.gameOverElement.innerHTML = '';
-		
+		this.gameOverElement.innerHTML = "";
+
 		// Add the new elements
 		this.gameOverElement.appendChild(lossReason);
 		this.gameOverElement.appendChild(tryAgainBtn);
-		
+
 		this.playSound("gameOver");
 		this.timer.stop();
 		this.timer.hide();
@@ -1641,48 +1697,19 @@ class PenguinGlider {
 	}
 
 	checkLevelCompletion() {
-		// Check if penguin is actually on the final iceberg, not just reached the distance
-		let onFinalIceberg = false;
-		for (let iceberg of this.icebergs) {
-			if (iceberg.isFinalIceberg) {
-				// Use collider properties for final iceberg landing detection
-				const colliderX = iceberg.colliderX !== undefined ? iceberg.colliderX : iceberg.x;
-				const colliderY = iceberg.colliderY !== undefined ? iceberg.colliderY : iceberg.y;
-				const colliderWidth = iceberg.colliderWidth !== undefined ? iceberg.colliderWidth : iceberg.width;
-				const colliderHeight = iceberg.colliderHeight !== undefined ? iceberg.colliderHeight : iceberg.height;
+		// Level completion is now handled directly in checkCollisions() when penguin touches final iceberg
+		// This function is kept for compatibility and distance-based progress tracking
 
-				// Check if penguin is standing on the final iceberg collision area
-				if (
-					this.penguin.x + this.penguin.width > colliderX + 5 &&
-					this.penguin.x < colliderX + colliderWidth - 5 &&
-					this.penguin.y + this.penguin.height >= colliderY - 3 &&
-					this.penguin.y + this.penguin.height <= colliderY + 12 &&
-					this.penguin.onIceberg
-				) {
-					onFinalIceberg = true;
-					break;
-				}
-			}
-		}
-
-		// Only complete the level if penguin is actually on the final iceberg
-		if (onFinalIceberg) {
-			this.levelCompleted = true;
-
-			// Check win conditions: enough fish and time remaining
-			const hasEnoughFish = this.score >= this.minFishRequired;
-			const hasTimeLeft = this.timer.remainingTime > 0;
-
-			if (hasEnoughFish && hasTimeLeft) {
-				this.levelWin();
-			} else {
-				this.gameOver(); // Failed to meet win conditions
-			}
+		// Only update level progress if level hasn't been completed yet
+		if (!this.levelCompleted && this.levelProgress >= 1) {
+			// If penguin reached the end distance but hasn't touched final iceberg yet,
+			// don't auto-complete - wait for actual iceberg collision
 		}
 	}
 
 	levelWin() {
 		this.gameState = "won";
+		this.stopBackgroundMusicWithFade();
 		this.timer.stop();
 		this.timer.hide();
 		this.scoreContainer.style.display = "none";
@@ -1700,18 +1727,36 @@ class PenguinGlider {
 	}
 
 	restart() {
+		// Stop and clean up any existing background music
+		this.stopBackgroundMusic();
+
+		// Completely destroy and recreate the music instance to avoid any state issues
+		this.backgroundMusic = null;
+
+		// Clean up existing UI elements to prevent duplicates
+		if (this.scoreContainer && this.scoreContainer.parentNode) {
+			this.scoreContainer.parentNode.removeChild(this.scoreContainer);
+		}
+		if (this.progressSystemContainer && this.progressSystemContainer.parentNode) {
+			this.progressSystemContainer.parentNode.removeChild(this.progressSystemContainer);
+		}
+
 		this.gameState = "playing";
 		this.score = 0;
 		this.fromRestart = true;
 		this.timer.reset();
 		this.timer.show();
 		this.timer.start();
+
+		// Reset penguin position
 		this.penguin.x = 100;
 		this.penguin.y = 300;
 		this.penguin.velocityX = 0;
 		this.penguin.velocityY = 0;
 		this.penguin.onIceberg = false;
 		this.penguin.gliding = false;
+
+		// Clear game objects
 		this.icebergs = [];
 		this.fish = [];
 		this.glideTimer = 0;
@@ -1729,7 +1774,6 @@ class PenguinGlider {
 		this.distanceTraveled = 0;
 		this.levelProgress = 0;
 		this.levelCompleted = false;
-		this.updateProgressBar();
 
 		// Reset fish tracking
 		this.fishSpawned = 0;
@@ -1741,14 +1785,34 @@ class PenguinGlider {
 		this.finalIcebergPosition = this.levelLength - 200;
 		this.preFinalIcebergGenerated = false;
 
+		// Recreate UI elements
+		this.createScoreDisplay();
+		this.createProgressBar();
+		this.updateProgressBar();
+
+		// Reset game world
 		this.generateInitialIcebergs();
 		this.positionPenguinOnFirstIceberg(); // Position penguin on first iceberg after restart
 		this.generateSnowflakes(); // Regenerate snowflakes for new camera position
+
+		// Hide game over/win screens
 		this.gameOverElement.style.display = "none";
 		this.winScreenElement.style.display = "none";
+
+		// Update displays
 		this.updateScoreDisplay();
 		this.scoreContainer.style.display = "block";
 		this.progressSystemContainer.style.display = "block";
+
+		// Recreate background music instance fresh
+		if (typeof BackgroundMusic !== "undefined") {
+			this.backgroundMusic = new BackgroundMusic();
+		}
+
+		// Start background music after everything is set up (longer delay to ensure cleanup is complete)
+		setTimeout(async () => {
+			await this.startBackgroundMusic();
+		}, 300);
 	}
 
 	render() {
@@ -1875,7 +1939,7 @@ class PenguinGlider {
 			) {
 				// Draw snow image
 				// Draw snow image
-				const img = this.images['snow1']; // only snow1
+				const img = this.images["snow1"]; // only snow1
 				if (this.imagesReady && img) {
 					const size = 60;
 					const offset = size / 2;
@@ -2339,6 +2403,56 @@ class PenguinGlider {
 		this.update(deltaMultiplier);
 		this.render();
 		requestAnimationFrame((time) => this.gameLoop(time));
+	}
+
+	// Background music control methods
+	async startBackgroundMusic() {
+		console.log("startBackgroundMusic called, backgroundMusic exists:", !!this.backgroundMusic);
+
+		if (!this.backgroundMusic) {
+			console.log("No background music instance available");
+			return;
+		}
+
+		try {
+			console.log("Starting background music, current playing state:", this.backgroundMusic.playing);
+			await this.backgroundMusic.start();
+			console.log("Background music start completed");
+		} catch (error) {
+			console.error("Failed to start background music:", error);
+		}
+	}
+
+	stopBackgroundMusic() {
+		console.log("stopBackgroundMusic called, backgroundMusic exists:", !!this.backgroundMusic);
+
+		if (this.backgroundMusic) {
+			try {
+				console.log("Stopping background music");
+				this.backgroundMusic.stop();
+				console.log("Background music stop completed");
+			} catch (error) {
+				console.warn("Error stopping background music:", error);
+			}
+		}
+	}
+
+	stopBackgroundMusicWithFade() {
+		if (this.backgroundMusic && this.backgroundMusic.playing) {
+			console.log("Stopping background music with fade");
+			this.backgroundMusic.fadeOut(1); // 1 second fade out for game over/win
+		}
+	}
+
+	// Toggle background music on/off
+	toggleBackgroundMusic() {
+		if (this.backgroundMusic) {
+			if (this.backgroundMusic.playing) {
+				this.stopBackgroundMusic();
+			} else {
+				this.startBackgroundMusic();
+			}
+		}
 	}
 }
 
