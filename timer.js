@@ -1,6 +1,5 @@
 class GameTimer {
 	constructor(duration = 60) {
-		// 2 minutes in seconds
 		this.totalDuration = duration;
 		this.remainingTime = duration;
 		this.isRunning = false;
@@ -10,23 +9,17 @@ class GameTimer {
 	}
 
 	createTimerElement() {
-		this.timerElement = document.createElement("div");
-		this.timerElement.id = "gameTimer";
-		this.timerElement.style.position = "fixed";
-		this.timerElement.style.top = "max(20px, env(safe-area-inset-top, 20px))";
-		this.timerElement.style.left = "20px";
-		this.timerElement.style.color = "#000000"; // Black color
-		this.timerElement.style.fontFamily = "'Digital-7', 'LCD', monospace"; // Digital watch style
-		this.timerElement.style.fontSize = "clamp(36px, 6vw, 48px)";
-		this.timerElement.style.fontWeight = "400"; // Thinner font
-		this.timerElement.style.letterSpacing = "2px"; // Spacing for digital look
-		this.timerElement.style.zIndex = "1"; // Behind snow
-		this.timerElement.style.padding = "clamp(4px, 1vw, 6px) clamp(8px, 2vw, 10px)";
-		this.timerElement.style.borderRadius = "4px";
-
-		this.timerElement.style.zIndex = "10";
+		// Grab existing element from HTML
+		this.timerElement = document.getElementById("gameTimer");
+		
+		if (!this.timerElement) {
+			// Fallback in case HTML structure is missing
+			this.timerElement = document.createElement("div");
+			this.timerElement.id = "gameTimer";
+			document.body.appendChild(this.timerElement);
+		}
+		
 		this.updateDisplay();
-		document.body.appendChild(this.timerElement);
 	}
 
 	formatTime(seconds) {
@@ -42,9 +35,9 @@ class GameTimer {
 
 			// Change color when 10 seconds or less
 			if (timeLeft <= 10) {
-				this.timerElement.style.color = "red";
+				this.timerElement.style.color = "#ff3b30"; // Red warning color
 			} else {
-				this.timerElement.style.color = "#000000"; // default black
+				this.timerElement.style.color = ""; // Revert to CSS default (white)
 			}
 		}
 	}

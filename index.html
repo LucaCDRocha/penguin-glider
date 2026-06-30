@@ -7,6 +7,8 @@
 			content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
 		<title>Penguin Glider - Arctic Adventure</title>
 		<style>
+			@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;700&family=Share+Tech+Mono&display=swap');
+
 			* {
 				margin: 0;
 				padding: 0;
@@ -17,11 +19,12 @@
 			body {
 				margin: 0;
 				padding: 0;
-				background: #000;
-				font-family: "Arial", sans-serif;
+				background: #060c1c;
+				font-family: "Outfit", sans-serif;
 				overflow: hidden;
 				touch-action: none; /* Prevent default touch behaviors */
 				user-select: none; /* Prevent text selection */
+				-webkit-user-select: none;
 				position: relative;
 				width: 100%;
 				height: 100%;
@@ -47,111 +50,191 @@
 				height: 100vh;
 				background: linear-gradient(to bottom, #87ceeb 0%, #4682b4 50%, #1e3a8a 100%);
 				z-index: 1;
-				/* Prevent canvas from being selectable */
 				-webkit-user-select: none;
 				-moz-user-select: none;
 				-ms-user-select: none;
 				user-select: none;
 			}
 
-			/* UI Elements overlay */
-			.ui-overlay {
+			/* Game Timer HUD */
+			#gameTimer {
 				position: fixed;
-				top: 0;
-				left: 0;
-				width: 100vw;
-				height: 100vh;
-				pointer-events: none;
+				top: max(12px, env(safe-area-inset-top, 12px));
+				left: clamp(10px, 3vw, 24px);
+				color: #ffffff;
+				font-family: 'Share Tech Mono', monospace;
+				font-size: clamp(20px, 4vw, 36px);
+				font-weight: 400;
+				letter-spacing: 1px;
 				z-index: 10;
-				display: flex;
-				flex-direction: column;
+				padding: 6px 14px;
+				border-radius: 12px;
+				background: rgba(12, 20, 36, 0.55);
+				backdrop-filter: blur(8px);
+				-webkit-backdrop-filter: blur(8px);
+				border: 1px solid rgba(255, 255, 255, 0.1);
+				box-shadow: 0 4px 20px rgba(0, 0, 0, 0.25);
+				pointer-events: none;
 			}
 
-			.top-ui {
-				display: flex;
-				justify-content: space-between;
-				align-items: flex-start;
-				padding: max(20px, env(safe-area-inset-top, 20px)) 20px 20px 20px;
-				width: 100%;
-				gap: 20px;
-			}
-
-			.score {
-				font-size: clamp(24px, 5vw, 32px);
-				font-weight: bold;
-				color: #ffd700;
-				text-shadow: 3px 3px 6px rgba(0, 0, 0, 0.8);
-				background: rgba(0, 0, 0, 0.3);
-				padding: clamp(8px, 2vw, 10px) clamp(15px, 4vw, 20px);
-				border-radius: 15px;
-				backdrop-filter: blur(10px);
-				white-space: nowrap;
-			}
-
-			.instructions {
-				font-size: clamp(14px, 3vw, 18px);
-				color: #e6f3ff;
-				text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.8);
-				background: rgba(0, 0, 0, 0.3);
-				padding: clamp(8px, 2vw, 10px) clamp(12px, 3vw, 15px);
-				border-radius: 10px;
-				backdrop-filter: blur(10px);
-				max-width: min(300px, 40vw);
-				line-height: 1.4;
-			}
-
-			.game-over {
+			/* Score HUD Container */
+			#gameScore {
 				position: fixed;
-				top: 0;
-				left: 0;
-				width: 100vw;
-				height: 100vh;
-				text-align: center;
-				display: none;
-				z-index: 999;
-				pointer-events: auto;
-				color: #ffffff;
-				
-				/* Dark overlay background */
-				background: rgba(0, 0, 0, 0.75);
-				backdrop-filter: blur(5px);
-				
-				/* Center content */
+				top: max(12px, env(safe-area-inset-top, 12px));
+				right: clamp(10px, 3vw, 24px);
+				z-index: 10;
+				pointer-events: none;
+				display: flex;
 				flex-direction: column;
-				justify-content: center;
+				align-items: flex-end;
+			}
+
+			.score-content {
+				display: flex;
 				align-items: center;
-			}
-
-			.game-over img {
-				width: clamp(300px, 40vw, 500px);
-				height: auto;
-				cursor: pointer;
-				transition: transform 0.2s;
-				filter: drop-shadow(0 0 20px rgba(255, 255, 255, 0.5));
-			}
-
-			.game-over img:hover {
-				transform: scale(1.1);
-			}
-
-			.game-over p {
-				font-family: "Digital-7", "LCD", monospace;
 				color: #ffffff;
-				font-size: clamp(16px, 4vw, 24px); /* smaller & adaptable */
-				font-weight: 200;
-				text-align: center;
-				letter-spacing: 2px;
-				margin-top: 30px;
+				font-family: 'Share Tech Mono', monospace;
+				font-size: clamp(20px, 4vw, 36px);
+				font-weight: 400;
+				letter-spacing: 1px;
+				padding: 6px 14px;
+				border-radius: 12px;
+				background: rgba(12, 20, 36, 0.55);
+				backdrop-filter: blur(8px);
+				-webkit-backdrop-filter: blur(8px);
+				border: 1px solid rgba(255, 255, 255, 0.1);
+				box-shadow: 0 4px 20px rgba(0, 0, 0, 0.25);
 			}
 
-			/* Start Screen */
+			.fish-icon {
+				height: clamp(16px, 3.5vw, 24px);
+				margin-right: 6px;
+				filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.2));
+			}
+
+			.score-message {
+				font-size: clamp(9px, 1.8vw, 12px);
+				font-weight: 700;
+				text-transform: uppercase;
+				letter-spacing: 0.5px;
+				margin-top: 4px;
+				color: #ff453a;
+				text-shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
+			}
+
+			/* Progress HUD Container */
+			#progressSystemContainer {
+				position: fixed;
+				top: max(12px, env(safe-area-inset-top, 12px));
+				left: 50%;
+				transform: translateX(-50%);
+				z-index: 10;
+				pointer-events: none;
+				display: flex;
+				flex-direction: column;
+				align-items: center;
+				width: clamp(150px, 30vw, 360px);
+			}
+
+			.progress-bar-container {
+				width: 100%;
+				display: flex;
+				align-items: center;
+				gap: 8px;
+			}
+
+			.progress-bar-track {
+				position: relative;
+				flex-grow: 1;
+				height: clamp(12px, 2.5vw, 18px);
+				background: rgba(255, 255, 255, 0.15);
+				backdrop-filter: blur(4px);
+				-webkit-backdrop-filter: blur(4px);
+				border: 1.5px solid rgba(255, 255, 255, 0.25);
+				border-radius: 8px;
+				overflow: visible;
+				box-shadow: 0 3px 10px rgba(0, 0, 0, 0.15);
+			}
+
+			.progress-bar-fill {
+				width: 0%;
+				height: 100%;
+				background: #4a90e2;
+				border-radius: 6px;
+				transition: width 0.3s ease, background-color 0.3s;
+				box-shadow: inset 0 1px 3px rgba(255, 255, 255, 0.2);
+			}
+
+			.progress-penguin {
+				position: absolute;
+				width: clamp(20px, 4vw, 28px);
+				height: clamp(20px, 4vw, 28px);
+				top: clamp(-5px, -1vw, -4px);
+				left: 0%;
+				transform: translateX(-50%);
+				z-index: 2;
+				object-fit: contain;
+				transition: left 0.3s ease;
+				filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.3));
+			}
+
+			.progress-baby-penguin {
+				width: clamp(28px, 6vw, 40px);
+				height: clamp(28px, 6vw, 40px);
+				object-fit: contain;
+				flex-shrink: 0;
+				filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.3));
+			}
+
+			.progress-text {
+				font-size: clamp(9px, 1.8vw, 12px);
+				font-weight: 700;
+				color: #ffffff;
+				margin-top: 4px;
+				text-transform: uppercase;
+				letter-spacing: 0.5px;
+				text-shadow: 0 1px 2px rgba(0, 0, 0, 0.4);
+			}
+
+			/* Bottle Collison Warning Message */
+			.bottle-message {
+				position: fixed;
+				top: 15%;
+				left: 50%;
+				transform: translateX(-50%);
+				font-family: 'Outfit', sans-serif;
+				font-weight: 700;
+				text-align: center;
+				font-size: clamp(13px, 2.5vw, 18px);
+				color: #ff3b30;
+				background: rgba(12, 20, 36, 0.85);
+				backdrop-filter: blur(8px);
+				-webkit-backdrop-filter: blur(8px);
+				border: 1px solid rgba(255, 59, 48, 0.3);
+				padding: 12px 24px;
+				border-radius: 16px;
+				box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
+				z-index: 100;
+				display: none;
+				max-width: 85vw;
+				animation: pulse 1.5s infinite;
+				pointer-events: none;
+			}
+
+			@keyframes pulse {
+				0% { transform: translateX(-50%) scale(1); }
+				50% { transform: translateX(-50%) scale(1.03); }
+				100% { transform: translateX(-50%) scale(1); }
+			}
+
+			/* Start / Intro Screen Overlay */
 			.start-screen {
 				position: fixed;
 				top: 0;
 				left: 0;
 				width: 100vw;
 				height: 100vh;
-				background: linear-gradient(to bottom, #87ceeb 0%, #4682b4 50%, #1e3a8a 100%);
+				background: radial-gradient(circle at center, #2e5c8a 0%, #0d1a36 100%);
 				color: white;
 				display: flex;
 				flex-direction: column;
@@ -160,45 +243,219 @@
 				z-index: 30;
 				text-align: center;
 				padding: 20px;
+				transition: opacity 0.6s ease;
 			}
 
-			.start-screen h1 {
-				font-size: clamp(32px, 8vw, 48px);
-				margin-bottom: 30px;
-				text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+			/* White Background Loader that fades out */
+			.intro-bg-white {
+				position: absolute;
+				top: 0;
+				left: 0;
+				width: 100%;
+				height: 100%;
+				background: #ffffff;
+				z-index: 30;
+				transition: opacity 0.8s ease-out;
+				pointer-events: none;
 			}
 
-			.game-instructions {
-				font-size: clamp(16px, 4vw, 20px);
+			/* Logo starting in center, moving to top when loaded */
+			.intro-logo {
+				position: absolute;
+				left: 50%;
+				top: 50%;
+				transform: translate(-50%, -50%);
+				max-width: 60vw;
+				max-height: 60vh;
+				z-index: 31;
+				transition: all 0.9s cubic-bezier(.4, 2, .6, 1);
+				filter: drop-shadow(0 0 32px #b3e0ff) drop-shadow(0 0 8px #4a90e2);
+			}
+
+			/* When loaded class is added */
+			.intro-logo.loaded {
+				max-width: 180px;
+				max-height: 120px;
+				top: 12%;
+				transform: translate(-50%, 0) scale(0.85);
+				filter: drop-shadow(0 0 48px #b3e0ff) drop-shadow(0 0 24px #4a90e2);
+			}
+
+			/* Loading Spinner and text */
+			.loading-container {
+				position: absolute;
+				top: calc(50% + 150px);
+				left: 50%;
+				transform: translateX(-50%);
+				display: flex;
+				flex-direction: column;
+				align-items: center;
+				gap: 12px;
+				z-index: 32;
+				transition: opacity 0.5s ease;
+			}
+
+			.loading-circle {
+				width: 40px;
+				height: 40px;
+				border: 3px solid rgba(74, 144, 226, 0.3);
+				border-left: 3px solid #4a90e2;
+				border-radius: 50%;
+				animation: spin 1s linear infinite;
+				filter: drop-shadow(0 0 12px rgba(74, 144, 226, 0.6));
+			}
+
+			@keyframes spin {
+				0% { transform: rotate(0deg); }
+				100% { transform: rotate(360deg); }
+			}
+
+			.loading-text {
+				font-size: 16px;
+				font-weight: 300;
+				color: #4a90e2;
+				text-shadow: 0 2px 8px rgba(74, 144, 226, 0.4);
+			}
+
+			/* Intro description text and play button (fades in once loaded) */
+			.intro-content {
+				position: absolute;
+				top: calc(12% + 110px);
+				left: 50%;
+				transform: translateX(-50%);
+				width: 90%;
+				max-width: 580px;
+				display: flex;
+				flex-direction: column;
+				align-items: center;
+				gap: 24px;
+				opacity: 0;
+				pointer-events: none;
+				transition: opacity 0.8s ease-in;
+				z-index: 32;
+			}
+
+			.intro-content.show {
+				opacity: 1;
+				pointer-events: auto;
+			}
+
+			.intro-text {
+				font-size: clamp(13px, 2.5vw, 16px);
 				line-height: 1.6;
-				margin-bottom: 40px;
-				max-width: 600px;
-				background: rgba(0, 0, 0, 0.3);
-				padding: 20px;
-				border-radius: 15px;
-				backdrop-filter: blur(10px);
+				color: #e6f3ff;
+				background: rgba(12, 20, 36, 0.55);
+				backdrop-filter: blur(12px);
+				-webkit-backdrop-filter: blur(12px);
+				padding: 20px 24px;
+				border-radius: 20px;
+				border: 1px solid rgba(255, 255, 255, 0.1);
+				text-align: center;
+				text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
 			}
 
-			.play-button {
+			.play-btn {
+				width: 200px;
+				cursor: pointer;
+				filter: drop-shadow(0 6px 20px rgba(74, 144, 226, 0.4));
+				transition: transform 0.3s ease, filter 0.3s;
+			}
+
+			.play-btn:hover {
+				transform: scale(1.1);
+				filter: drop-shadow(0 8px 25px rgba(74, 144, 226, 0.6));
+			}
+
+			.play-btn:active {
+				transform: scale(0.95);
+			}
+
+			/* Screens Overlay (Game Over, Win) */
+			.screen-overlay {
+				position: fixed;
+				top: 0;
+				left: 0;
+				width: 100vw;
+				height: 100vh;
+				background: rgba(6, 12, 28, 0.85);
+				backdrop-filter: blur(10px);
+				-webkit-backdrop-filter: blur(10px);
+				z-index: 999;
+				display: none; /* Flex when active */
+				flex-direction: column;
+				justify-content: center;
+				align-items: center;
+				color: #ffffff;
+				padding: 20px;
+				gap: 20px;
+			}
+
+			.screen-overlay h2 {
+				font-size: clamp(24px, 5vw, 36px);
+				color: #ffd700;
+				text-shadow: 0 0 15px rgba(255, 215, 0, 0.4);
+				font-weight: 700;
+			}
+
+			.screen-overlay p {
+				font-size: clamp(16px, 3.5vw, 20px);
+				color: #e6f3ff;
+				line-height: 1.5;
+				font-weight: 300;
+			}
+
+			.screen-overlay strong {
+				color: #ffd700;
+				font-weight: 700;
+				font-size: 1.1em;
+			}
+
+			.action-btn {
+				width: clamp(180px, 30vw, 240px);
+				cursor: pointer;
+				transition: transform 0.2s ease, filter 0.2s;
+				filter: drop-shadow(0 4px 15px rgba(0, 0, 0, 0.3));
+			}
+
+			.action-btn:hover {
+				transform: scale(1.08);
+				filter: drop-shadow(0 6px 20px rgba(0, 0, 0, 0.4));
+			}
+
+			.action-btn:active {
+				transform: scale(0.95);
+			}
+
+			.bravo-img {
+				width: clamp(200px, 30vw, 280px);
+				height: auto;
+				margin-bottom: 8px;
+				filter: drop-shadow(0 4px 15px rgba(0, 0, 0, 0.3));
+			}
+
+			.play-again-btn {
 				background: #4a90e2;
 				color: white;
 				border: none;
-				padding: clamp(15px, 4vw, 20px) clamp(30px, 8vw, 40px);
-				border-radius: 15px;
+				padding: 12px 30px;
+				border-radius: 12px;
 				cursor: pointer;
-				font-size: clamp(18px, 5vw, 24px);
+				font-size: clamp(15px, 3vw, 18px);
 				font-weight: bold;
-				transition: all 0.3s;
-				pointer-events: auto;
-				touch-action: manipulation;
-				box-shadow: 0 6px 20px rgba(74, 144, 226, 0.4);
+				transition: all 0.3s ease;
+				box-shadow: 0 6px 20px rgba(74, 144, 226, 0.3);
+				text-transform: uppercase;
+				letter-spacing: 1px;
 			}
 
-			.play-button:hover,
-			.play-button:active {
+			.play-again-btn:hover {
 				background: #357abd;
 				transform: scale(1.05);
-				box-shadow: 0 8px 25px rgba(74, 144, 226, 0.6);
+				box-shadow: 0 8px 25px rgba(74, 144, 226, 0.5);
+			}
+
+			.play-again-btn:active {
+				transform: scale(0.95);
 			}
 
 			/* Mobile Controls */
@@ -224,34 +481,6 @@
 					rgba(0, 0, 0, 0.05) 70%,
 					transparent 100%
 				);
-			}
-
-			/* Create gradient blur effect using pseudo-element */
-			.mobile-controls::before {
-				content: '';
-				position: absolute;
-				top: 0;
-				left: 0;
-				right: 0;
-				bottom: 0;
-				backdrop-filter: blur(12px);
-				-webkit-backdrop-filter: blur(12px);
-				mask: linear-gradient(
-					to top,
-					rgba(0, 0, 0, 1) 0%,
-					rgba(0, 0, 0, 0.8) 30%,
-					rgba(0, 0, 0, 0.3) 70%,
-					transparent 100%
-				);
-				-webkit-mask: linear-gradient(
-					to top,
-					rgba(0, 0, 0, 1) 0%,
-					rgba(0, 0, 0, 0.8) 30%,
-					rgba(0, 0, 0, 0.3) 70%,
-					transparent 100%
-				);
-				pointer-events: none;
-				z-index: -1;
 			}
 
 			.control-button {
@@ -287,562 +516,291 @@
 				flex: 0 0 auto;
 				margin: 0;
 				flex-grow: 1;
-				/* width: 100%; */
 			}
 
 			.jump-button:active {
 				transform: scale(0.95);
 			}
 
-			/* Show mobile controls on touch devices */
+			/* Responsiveness Media Queries */
+
+			/* Show mobile controls on coarse pointer / touch devices */
 			@media (hover: none) and (pointer: coarse) {
 				.mobile-controls {
-					display: flex !important;
-				}
-
-				.instructions {
-					font-size: clamp(12px, 3vw, 16px);
-				}
-
-				/* Hide instructions on very small screens when controls are visible */
-				@media (max-height: 600px) {
-					.instructions {
-						display: none;
-					}
+					display: flex;
 				}
 			}
 
-			/* Alternative mobile detection */
+			/* Fallback for narrow viewports */
 			@media (max-width: 768px) {
 				.mobile-controls {
 					display: flex;
 				}
 
-				.top-ui {
-					flex-direction: column;
-					align-items: center;
-					gap: 10px;
-				}
-
-				.instructions {
-					text-align: center;
-					max-width: 80vw;
-				}
-			}
-
-			/* Very small screens */
-			@media (max-width: 480px) {
-				.top-ui {
-					padding: 10px;
-				}
-
-				.score {
-					font-size: clamp(20px, 5vw, 24px);
-				}
-
-				.instructions {
-					font-size: clamp(12px, 3vw, 14px);
-				}
-
-				.mobile-controls {
-					bottom: 0;
-					padding: max(10px, env(safe-area-inset-bottom, 10px)) 10px;
-					padding-bottom: max(40px, env(safe-area-inset-bottom, 40px));
-					gap: 0;
-				}
-
-				.control-button {
-					min-width: clamp(50px, 12vw, 60px);
-					min-height: clamp(50px, 12vw, 60px);
-					font-size: clamp(16px, 3.5vw, 18px);
-					padding: 0;
-				}
-
-				.jump-button {
-					min-height: clamp(60px, 15vw, 70px);
-					font-size: clamp(16px, 3.5vw, 20px);
-					margin: 0;
-				}
-			}
-
-			/* Landscape orientation on mobile */
-			@media (max-height: 500px) and (orientation: landscape) {
-				.top-ui {
-					padding: 5px 20px;
-					flex-direction: row;
-					justify-content: space-between;
-				}
-
-				.instructions {
-					font-size: clamp(10px, 2vw, 14px);
+				#progressSystemContainer {
+					width: 280px;
 					max-width: 50vw;
 				}
 
+				#gameTimer {
+					top: calc(max(20px, env(safe-area-inset-top, 20px)) + 55px);
+					left: 15px;
+					font-size: clamp(22px, 4vw, 30px);
+					padding: 6px 12px;
+				}
+
+				#gameScore {
+					top: calc(max(20px, env(safe-area-inset-top, 20px)) + 55px);
+					right: 15px;
+				}
+
+				.score-content {
+					font-size: clamp(22px, 4vw, 30px);
+					padding: 6px 12px;
+				}
+
+				.score-message {
+					font-size: clamp(10px, 1.8vw, 12px);
+				}
+			}
+
+			/* Extra small screens */
+			@media (max-width: 480px) {
+				#progressSystemContainer {
+					width: 200px;
+					max-width: 50vw;
+				}
+
+				.progress-bar-track {
+					height: 14px;
+				}
+
+				.progress-penguin {
+					width: 22px;
+					height: 22px;
+					top: -5px;
+				}
+
+				.progress-baby-penguin {
+					width: 32px;
+					height: 32px;
+				}
+
+				#gameTimer {
+					top: calc(max(15px, env(safe-area-inset-top, 15px)) + 45px);
+					left: 10px;
+					font-size: 20px;
+					padding: 4px 10px;
+					border-radius: 10px;
+				}
+
+				#gameScore {
+					top: calc(max(15px, env(safe-area-inset-top, 15px)) + 45px);
+					right: 10px;
+				}
+
+				.score-content {
+					font-size: 20px;
+					padding: 4px 10px;
+					border-radius: 10px;
+				}
+
+				.fish-icon {
+					height: 18px;
+					margin-right: 4px;
+				}
+			}
+
+			/* Landscape orientation on mobile (small height) */
+			@media (max-height: 500px) and (orientation: landscape) {
 				.mobile-controls {
-					bottom: 0;
-					padding: max(5px, env(safe-area-inset-bottom, 5px)) 15px;
-					padding-bottom: max(30px, env(safe-area-inset-bottom, 30px));
+					height: clamp(80px, 20vh, 120px);
+					padding: 10px 20px;
+					padding-bottom: max(15px, env(safe-area-inset-bottom, 15px));
 				}
 
 				.control-button {
-					min-width: clamp(40px, 8vw, 50px);
-					min-height: clamp(40px, 8vw, 50px);
-					font-size: clamp(14px, 2.5vw, 16px);
+					width: clamp(50px, 12vw, 64px);
+					height: clamp(50px, 12vw, 64px);
 				}
 
 				.jump-button {
-					min-height: clamp(45px, 10vw, 55px);
-					font-size: clamp(14px, 2.5vw, 18px);
+					width: clamp(60px, 14vw, 76px);
+					height: clamp(60px, 14vw, 76px);
 				}
-			}
 
-			/* Loading Circle Styles */
-			.loading-circle {
-				position: fixed;
-				width: clamp(30px, 8vw, 40px);
-				height: clamp(30px, 8vw, 40px);
-				left: 50%;
-				top: calc(50% + clamp(140px, 35vw, 180px));
-				transform: translateX(-50%);
-				z-index: 1002;
-				border: 3px solid rgba(74, 144, 226, 0.3);
-				border-left: 3px solid #4a90e2;
-				border-radius: 50%;
-				animation: spin 1s linear infinite;
-				filter: drop-shadow(0 0 12px rgba(74, 144, 226, 0.6));
-			}
+				#progressSystemContainer {
+					width: 240px;
+					max-width: 45vw;
+				}
 
-			@keyframes spin {
-				0% { transform: translateX(-50%) rotate(0deg); }
-				100% { transform: translateX(-50%) rotate(360deg); }
-			}
-
-			/* Loading text */
-			.loading-text {
-				position: fixed;
-				left: 50%;
-				top: calc(50% + clamp(200px, 45vw, 240px));
-				transform: translateX(-50%);
-				z-index: 1002;
-				font-family: "Segoe UI", Arial, Helvetica Neue, sans-serif;
-				font-weight: 300;
-				font-size: clamp(14px, 4vw, 16px);
-				color: #4a90e2;
-				text-align: center;
-				text-shadow: 0 2px 8px rgba(74, 144, 226, 0.4);
-				opacity: 0.8;
-				white-space: nowrap;
-			}
-
-			/* Mobile specific positioning for timer and score below progress bar */
-			@media (hover: none) and (pointer: coarse) {
 				#gameTimer {
-					top: calc(max(20px, env(safe-area-inset-top, 20px)) + 60px) !important;
-					left: 15px !important;
-					font-size: clamp(24px, 4.5vw, 32px) !important;
+					top: calc(max(10px, env(safe-area-inset-top, 10px)) + 40px);
+					left: 10px;
+					font-size: 18px;
+					padding: 4px 8px;
 				}
 
-				/* Target the dynamically created score container */
 				#gameScore {
-					top: calc(max(20px, env(safe-area-inset-top, 20px)) + 60px) !important;
-					right: 15px !important;
+					top: calc(max(10px, env(safe-area-inset-top, 10px)) + 40px);
+					right: 10px;
 				}
 
-				/* Make score elements smaller */
-				#gameScore div {
-					font-size: clamp(24px, 4.5vw, 32px) !important;
-				}
-
-				#gameScore div:last-child {
-					font-size: clamp(12px, 2.5vw, 16px) !important;
-				}
-
-				.top-ui {
-					position: fixed !important;
-					top: calc(max(20px, env(safe-area-inset-top, 20px)) + 60px) !important;
-					right: 15px !important;
-					left: auto !important;
-					width: auto !important;
-					padding: 0 !important;
-					margin: 0 !important;
-				}
-
-				.score {
-					margin: 0 !important;
-					font-size: clamp(18px, 4vw, 24px) !important;
-					padding: clamp(6px, 1.5vw, 8px) clamp(10px, 2.5vw, 12px) !important;
-				}
-
-				.instructions {
-					display: none !important;
-				}
-			}
-
-			@media (max-width: 768px) {
-				#gameTimer {
-					top: calc(max(20px, env(safe-area-inset-top, 20px)) + 60px) !important;
-					left: 15px !important;
-					font-size: clamp(24px, 4.5vw, 32px) !important;
-				}
-
-				/* Target the dynamically created score container */
-				#gameScore {
-					top: calc(max(20px, env(safe-area-inset-top, 20px)) + 60px) !important;
-					right: 15px !important;
-				}
-
-				/* Make score elements smaller */
-				#gameScore div {
-					font-size: clamp(24px, 4.5vw, 32px) !important;
-				}
-
-				#gameScore div:last-child {
-					font-size: clamp(12px, 2.5vw, 16px) !important;
-				}
-
-				.top-ui {
-					position: fixed !important;
-					top: calc(max(20px, env(safe-area-inset-top, 20px)) + 60px) !important;
-					right: 15px !important;
-					left: auto !important;
-					width: auto !important;
-					padding: 0 !important;
-					margin: 0 !important;
-				}
-
-				.score {
-					margin: 0 !important;
-					font-size: clamp(18px, 4vw, 24px) !important;
-					padding: clamp(6px, 1.5vw, 8px) clamp(10px, 2.5vw, 12px) !important;
-				}
-
-				.instructions {
-					display: none !important;
-				}
-			}
-
-			/* Very small screens adjustments */
-			@media (max-width: 480px) {
-				#gameTimer {
-					top: calc(max(20px, env(safe-area-inset-top, 20px)) + 50px) !important;
-					left: 10px !important;
-					font-size: clamp(20px, 4vw, 28px) !important;
-				}
-
-				/* Target the dynamically created score container */
-				#gameScore {
-					top: calc(max(20px, env(safe-area-inset-top, 20px)) + 50px) !important;
-					right: 10px !important;
-				}
-
-				/* Make score elements smaller */
-				#gameScore div {
-					font-size: clamp(20px, 4vw, 28px) !important;
-				}
-
-				#gameScore div:last-child {
-					font-size: clamp(10px, 2vw, 14px) !important;
-				}
-
-				.top-ui {
-					position: fixed !important;
-					top: calc(max(20px, env(safe-area-inset-top, 20px)) + 50px) !important;
-					right: 10px !important;
-					left: auto !important;
-					width: auto !important;
-					padding: 0 !important;
-					margin: 0 !important;
-				}
-
-				.score {
-					margin: 0 !important;
-					font-size: clamp(16px, 3.5vw, 20px) !important;
-					padding: clamp(4px, 1vw, 6px) clamp(8px, 2vw, 10px) !important;
-				}
-
-				.instructions {
-					display: none !important;
-				}
-			}
-
-			/* Landscape orientation on mobile */
-			@media (max-height: 500px) and (orientation: landscape) {
-				#gameTimer {
-					top: calc(max(20px, env(safe-area-inset-top, 20px)) + 45px) !important;
-					left: 10px !important;
-					font-size: clamp(18px, 3.5vw, 24px) !important;
-				}
-
-				/* Target the dynamically created score container */
-				#gameScore {
-					top: calc(max(20px, env(safe-area-inset-top, 20px)) + 45px) !important;
-					right: 10px !important;
-				}
-
-				/* Make score elements smaller */
-				#gameScore div {
-					font-size: clamp(18px, 3.5vw, 24px) !important;
-				}
-
-				#gameScore div:last-child {
-					font-size: clamp(9px, 1.8vw, 12px) !important;
-				}
-
-				.top-ui {
-					position: fixed !important;
-					top: calc(max(20px, env(safe-area-inset-top, 20px)) + 45px) !important;
-					right: 10px !important;
-					left: auto !important;
-					width: auto !important;
-					padding: 0 !important;
-					margin: 0 !important;
-				}
-
-				.score {
-					margin: 0 !important;
-					font-size: clamp(14px, 3vw, 18px) !important;
-					padding: clamp(3px, 0.8vw, 5px) clamp(6px, 1.5vw, 8px) !important;
-				}
-
-				.instructions {
-					display: none !important;
-				}
-			}
-
-			/* Mobile-specific progress bar sizing */
-			@media (hover: none) and (pointer: coarse), (max-width: 768px) {
-				.progress-bar-container {
-					width: 320px !important;
-					max-width: 75vw !important;
-					gap: 10px !important;
-				}
-
-				.progress-bar-track {
-					height: 20px !important;
-					border-radius: 10px !important;
-					border: 2px solid #000000 !important;
-				}
-
-				.progress-penguin {
-					width: 24px !important;
-					height: 24px !important;
-					top: -14px !important;
-				}
-
-				.progress-baby-penguin {
-					width: 32px !important;
-					height: 32px !important;
+				.score-content {
+					font-size: 18px;
+					padding: 4px 8px;
 				}
 
 				.score-message {
-					font-size: clamp(14px, 3.5vw, 18px) !important;
-				}
-			}
-
-			@media (max-width: 480px) {
-				.progress-bar-container {
-					width: 280px !important;
-					max-width: 70vw !important;
-					gap: 8px !important;
-				}
-
-				.progress-bar-track {
-					height: 18px !important;
-					border-radius: 9px !important;
-					border: 2px solid #000000 !important;
-				}
-
-				.progress-penguin {
-					width: 20px !important;
-					height: 20px !important;
-					top: -12px !important;
-				}
-
-				.progress-baby-penguin {
-					width: 28px !important;
-					height: 28px !important;
-				}
-
-				.score-message {
-					font-size: clamp(12px, 3vw, 16px) !important;
-				}
-			}
-
-			@media (max-height: 500px) and (orientation: landscape) {
-				.progress-bar-container {
-					width: 250px !important;
-					max-width: 60vw !important;
-					gap: 6px !important;
-				}
-
-				.progress-bar-track {
-					height: 16px !important;
-					border-radius: 8px !important;
-					border: 2px solid #000000 !important;
-				}
-
-				.progress-penguin {
-					width: 18px !important;
-					height: 18px !important;
-					top: -10px !important;
-				}
-
-				.progress-baby-penguin {
-					width: 24px !important;
-					height: 24px !important;
-				}
-
-				.score-message {
-					font-size: clamp(11px, 2.5vw, 14px) !important;
-				}
-			}
-
-			/* Mobile-specific fish icon sizing */
-			@media (hover: none) and (pointer: coarse), (max-width: 768px) {
-				.fish-icon {
-					height: clamp(18px, 3vw, 24px) !important;
-					margin-right: 6px !important;
-				}
-			}
-
-			@media (max-width: 480px) {
-				.fish-icon {
-					height: clamp(16px, 2.5vw, 20px) !important;
-					margin-right: 4px !important;
-				}
-			}
-
-			@media (max-height: 500px) and (orientation: landscape) {
-				.fish-icon {
-					height: clamp(14px, 2vw, 18px) !important;
-					margin-right: 4px !important;
+					display: none; /* Hide requirement text to save space */
 				}
 			}
 		</style>
 	</head>
 	<body>
-		<!-- Start Screen -->
-		<div class="start-screen" id="startScreen"></div>
+		<!-- Start / Intro Loader Screen -->
+		<div class="start-screen" id="startScreen">
+			<div class="intro-bg-white" id="introBg"></div>
+			<img src="img/penguin-glider.png" class="intro-logo" id="introLogo" alt="Penguin Glider" />
+			<div class="loading-container" id="loadingContainer">
+				<div class="loading-circle"></div>
+				<div class="loading-text" id="loadingText">Loading... 0%</div>
+			</div>
+			<div class="intro-content" id="introContent">
+				<p class="intro-text">
+					Brrr… it’s freezing in Antarctica! <br><br>
+					You’re a super-fast penguin mom racing across sliding icebergs to feed your hungry chick. <br><br>
+					Grab as many fish as you can, but watch out — an orca is waiting in the water, a polar bear is on the hunt, and plastic junk is everywhere. <br><br>
+					Don’t slip, don’t get caught, don’t stay too long in the icy water… and don’t be late!
+				</p>
+				<img src="img/play.png" class="play-btn" id="playBtn" alt="Play" />
+			</div>
+		</div>
 
+		<!-- Game Canvas -->
 		<canvas id="gameCanvas"></canvas>
 
-		<!-- UI Overlay -->
+		<!-- Game Timer HUD -->
+		<div id="gameTimer">1:00</div>
+
+		<!-- Score HUD Container -->
+		<div id="gameScore">
+			<div class="score-content">
+				<img src="img/fish4.png" class="fish-icon" alt="Fish" />
+				<span id="scoreText">x 0</span>
+			</div>
+			<div class="score-message" id="scoreMessage">collect at least 10!</div>
+		</div>
+
+		<!-- Progress HUD Container -->
+		<div id="progressSystemContainer">
+			<div class="progress-bar-container">
+				<div class="progress-bar-track">
+					<div class="progress-bar-fill" id="progressBarFill"></div>
+					<img src="img/penguin.png" class="progress-penguin" id="progressPenguin" alt="Penguin" />
+				</div>
+				<img src="img/penguin-baby.png" class="progress-baby-penguin" alt="Baby Penguin" />
+			</div>
+			<div class="progress-text" id="progressText">Level Progress: 0%</div>
+		</div>
+
+		<!-- Warning Message overlay -->
+		<div class="bottle-message" id="bottleMessage">OOOPS, watch out for the plastic waste! You loose a fish.</div>
 
 		<!-- Mobile Touch Controls -->
 		<div class="mobile-controls" id="mobileControls">
 			<button class="control-button" id="leftBtn">
-				<img src="img/left.png" alt="Left" style="width: 100%; height: 100%; object-fit: contain" />
+				<img src="img/left.png" alt="Left" />
 			</button>
 			<button class="control-button jump-button" id="jumpBtn">
-				<img src="img/jump.png" alt="Jump/Glide" style="width: 100%; height: 100%; object-fit: contain" />
+				<img src="img/jump.png" alt="Jump/Glide" />
 			</button>
 			<button class="control-button" id="rightBtn">
-				<img src="img/right.png" alt="Right" style="width: 100%; height: 100%; object-fit: contain" />
+				<img src="img/right.png" alt="Right" />
 			</button>
 		</div>
 
-		<!-- Game Over Display -->
-		<div class="game-over" id="gameOver">
-			<p>OOOOPS you fell in the icy water!</p>
-			<br /><br />
-			<img src="img/try-again.png" onclick="restartGame()" alt="Try Again" />
+		<!-- Game Over Screen Overlay -->
+		<div class="screen-overlay" id="gameOver">
+			<img src="img/try-again.png" class="action-btn" onclick="restartGame()" alt="Try Again" />
+			<p id="lossReason">OOOOPS you fell in the icy water!</p>
 		</div>
 
-		<!-- Win Screen Modal -->
-		<div class="game-over" id="winScreen">
+		<!-- Win Screen Overlay -->
+		<div class="screen-overlay" id="winScreen">
+			<img src="img/brrravoo.png" class="bravo-img" alt="Brrravoo!" />
 			<h2>🎉 Level Complete! 🎉</h2>
 			<p>You successfully reached the end with enough fish! 🐟</p>
-			<p>Final Score: <span id="winScore">0</span> fish</p>
-			<p>Time Remaining: <span id="winTime">0:00</span></p>
-			<button class="restart-btn" onclick="restartGame()">Play Again</button>
+			<p>Final Score: <strong id="winScore">0</strong> fish</p>
+			<p>Time Remaining: <strong id="winTime">0:00</strong></p>
+			<button class="play-again-btn" onclick="restartGame()">Play Again</button>
 		</div>
 
+		<!-- Scripts Loading -->
+		<script src="timer.js"></script>
 		<script src="game.js"></script>
+		<script src="start.js"></script>
 		<script>
-			// Start screen functionality
+			// Start screen functionality called from start.js fallback
 			function startGame() {
 				const startScreen = document.getElementById("startScreen");
-				startScreen.style.display = "none";
+				if (startScreen) startScreen.style.display = "none";
 
-				// Initialize and start the game with default autoStart behavior
-				if (typeof game === "undefined") {
-					game = new PenguinGlider(); // Default autoStart = true
-				} else {
-					game.restart();
+				if (!window.game) {
+					window.game = new PenguinGlider(false);
 				}
+				window.game.gameState = "playing";
+				window.game.timer.start();
+				window.game.startBackgroundMusic();
+				
+				// Ensure game displays HUD
+				showGameHUD(true);
 			}
 
-			// Restart game directly without showing start screen
+			// Restart game functionality
 			let isRestarting = false; // Prevent rapid clicking
 			function restartGame() {
-				// Prevent rapid clicking
 				if (isRestarting) {
 					console.log("Restart already in progress, ignoring click");
 					return;
 				}
-
 				isRestarting = true;
 				console.log("Starting restart process");
 
 				const gameOver = document.getElementById("gameOver");
 				const winScreen = document.getElementById("winScreen");
-				gameOver.style.display = "none";
-				winScreen.style.display = "none";
+				if (gameOver) gameOver.style.display = "none";
+				if (winScreen) winScreen.style.display = "none";
 
-				if (game) {
-					game.restart();
+				if (window.game) {
+					window.game.restart();
 				} else {
-					// Clean up any existing UI elements before creating new game
-					cleanupGameUI();
-					game = new PenguinGlider();
+					window.game = new PenguinGlider(false);
+					window.game.gameState = "playing";
+					window.game.timer.start();
+					window.game.startBackgroundMusic();
 				}
 
-				// Reset the restart flag after a delay to allow the restart to complete
+				showGameHUD(true);
+
 				setTimeout(() => {
 					isRestarting = false;
 					console.log("Restart process complete");
 				}, 500);
 			}
 
-			// Helper function to clean up existing game UI elements
-			function cleanupGameUI() {
-				// Remove any existing score containers
-				const existingScoreContainers = document.querySelectorAll('div[style*="fixed"][style*="right: 20px"]');
-				existingScoreContainers.forEach((container) => {
-					if (container.parentNode) {
-						container.parentNode.removeChild(container);
-					}
-				});
+			// Toggle showing HUD
+			function showGameHUD(show) {
+				const timer = document.getElementById("gameTimer");
+				const score = document.getElementById("gameScore");
+				const progress = document.getElementById("progressSystemContainer");
+				const displayStyle = show ? "flex" : "none";
+				const blockStyle = show ? "block" : "none";
 
-				// Remove any existing progress containers
-				const existingProgressContainers = document.querySelectorAll('div[style*="fixed"][style*="left: 50%"]');
-				existingProgressContainers.forEach((container) => {
-					if (container.parentNode) {
-						container.parentNode.removeChild(container);
-					}
-				});
-
-				// Remove any existing game timer elements
-				const existingTimers = document.querySelectorAll("#gameTimer");
-				existingTimers.forEach((timer) => {
-					if (timer.parentNode) {
-						timer.parentNode.removeChild(timer);
-					}
-				});
-			}
-
-			// Function to return to start screen (if needed)
-			function returnToStart() {
-				const startScreen = document.getElementById("startScreen");
-				startScreen.style.display = "flex";
-
-				const gameOver = document.getElementById("gameOver");
-				gameOver.style.display = "none";
+				if (timer) timer.style.display = blockStyle;
+				if (score) score.style.display = displayStyle;
+				if (progress) progress.style.display = displayStyle;
 			}
 		</script>
-		<script src="timer.js"></script>
-		<script src="start.js"></script>
-	</body>
-</html>
 	</body>
 </html>
