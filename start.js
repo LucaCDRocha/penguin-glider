@@ -1,10 +1,18 @@
 // start.js - Animated intro for Penguin Glider
 window.addEventListener("DOMContentLoaded", function () {
 	// Create water-bubbles audio element
-	var bubbleAudio = new Audio("water-bubbles.mp3");
+	var bubbleAudio = new Audio("music/water-bubbles.mp3");
 	bubbleAudio.loop = true;
 	bubbleAudio.preload = "auto";
-	bubbleAudio.volume = 1;
+	bubbleAudio.volume = 0.6; // High volume as requested
+	
+	// Add error handling and loading events for debugging
+	bubbleAudio.addEventListener('canplay', function() {
+		console.log("Water bubbles audio loaded successfully");
+	});
+	bubbleAudio.addEventListener('error', function(e) {
+		console.error("Water bubbles audio failed to load:", e);
+	});
 
 	// Grab HTML elements
 	var startScreen = document.getElementById("startScreen");
