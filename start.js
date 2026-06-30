@@ -4,76 +4,30 @@ window.addEventListener("DOMContentLoaded", function () {
 	var bubbleAudio = new Audio("water-bubbles.mp3");
 	bubbleAudio.loop = true;
 	bubbleAudio.preload = "auto";
-	bubbleAudio.volume = 1; // Slightly lower volume for ambient effect
+	bubbleAudio.volume = 1;
 
-	// Create white background overlay
-	var bg = document.createElement("div");
-	bg.id = "introBg";
-	bg.style.position = "fixed";
-	bg.style.left = "0";
-	bg.style.top = "0";
-	bg.style.width = "100vw";
-	bg.style.height = "100vh";
-	bg.style.background = "#fff";
-	bg.style.zIndex = "1000";
-	bg.style.transition = "background 0.5s";
-	document.body.appendChild(bg);
+	// Grab HTML elements
+	var startScreen = document.getElementById("startScreen");
+	var introBg = document.getElementById("introBg");
+	var introLogo = document.getElementById("introLogo");
+	var loadingContainer = document.getElementById("loadingContainer");
+	var loadingText = document.getElementById("loadingText");
+	var introContent = document.getElementById("introContent");
+	var playBtn = document.getElementById("playBtn");
 
-	// Create logo with blue glow and elegant font
-	var logo = document.createElement("img");
-	logo.src = "img/penguin-glider.png";
-	logo.alt = "Penguin Glider";
-	logo.id = "introLogo";
-	logo.style.position = "fixed";
-	logo.style.left = "50%";
-	logo.style.top = "50%";
-	logo.style.transform = "translate(-50%,-50%)";
-	logo.style.zIndex = "1001";
-	logo.style.transition = "all 0.9s cubic-bezier(.4,2,.6,1)";
-	logo.style.maxWidth = "60vw";
-	logo.style.maxHeight = "60vh";
-	logo.style.filter = "drop-shadow(0 0 32px #b3e0ff) drop-shadow(0 0 8px #4a90e2)";
-	document.body.appendChild(logo);
-
-	// Create loading circle
-	var loadingCircle = document.createElement("div");
-	loadingCircle.id = "loadingCircle";
-	loadingCircle.className = "loading-circle";
-	loadingCircle.style.opacity = "0";
-	loadingCircle.style.transition = "opacity 0.5s ease-in";
-	document.body.appendChild(loadingCircle);
-
-	// Create loading text
-	var loadingText = document.createElement("div");
-	loadingText.id = "loadingText";
-	loadingText.className = "loading-text";
-	loadingText.textContent = "Loading...";
-	loadingText.style.opacity = "0";
-	loadingText.style.transition = "opacity 0.5s ease-in";
-	document.body.appendChild(loadingText);
-
-	// Fade in loading elements after a short delay
-	setTimeout(() => {
-		loadingCircle.style.opacity = "1";
-		loadingText.style.opacity = "0.8";
-	}, 300);
-
-	// Create a temporary game instance to load images and check when they're ready
 	var tempGame = null;
 	var logoAnimationTriggered = false;
-	var logoStartTime = Date.now(); // Track when logo first appears
+	var logoStartTime = Date.now();
 	var minimumLogoDisplayTime = 4000; // 4 seconds minimum display time
 
 	// Start image loading immediately when DOM is loaded
 	function initImageLoading() {
-		// Only create game instance if not already created
 		if (!tempGame) {
-			tempGame = new PenguinGlider(false); // Create game instance with autoStart disabled
+			tempGame = new PenguinGlider(false); // Create game instance with autoStart disabled (sets state to "intro")
 		}
 
 		// Update loading progress periodically
 		function updateLoadingProgress() {
-			var loadingText = document.getElementById("loadingText");
 			if (tempGame && loadingText && !tempGame.imagesReady) {
 				var progress = Math.round((tempGame.imagesLoaded / tempGame.totalImages) * 100);
 				loadingText.textContent = `Loading... ${progress}%`;
@@ -85,7 +39,6 @@ window.addEventListener("DOMContentLoaded", function () {
 			var timeElapsed = Date.now() - logoStartTime;
 			var minimumTimePassed = timeElapsed >= minimumLogoDisplayTime;
 
-			// Update loading progress
 			updateLoadingProgress();
 
 			if (tempGame && tempGame.imagesReady && minimumTimePassed && !logoAnimationTriggered) {
@@ -99,186 +52,91 @@ window.addEventListener("DOMContentLoaded", function () {
 		checkImagesReady();
 	}
 
-	// Initialize image loading when the logo loads or immediately if it's already loaded
-	logo.onload = function () {
+	// Initialize image loading
+	if (introLogo.complete) {
 		initImageLoading();
-	};
-
-	// Also try to initialize immediately in case the logo loads very fast
-	if (logo.complete) {
-		initImageLoading();
+	} else {
+		introLogo.onload = function () {
+			initImageLoading();
+		};
 	}
 
-	// Optional: Add a text title overlay for more elegant font (if you want text on top of the image)
-	/*
-    var title = document.createElement('div');
-    title.textContent = 'Penguin Glider';
-    title.style.position = 'fixed';
-    title.style.left = '50%';
-    title.style.top = 'calc(50% + 90px)';
-    title.style.transform = 'translate(-50%,0)';
-    title.style.zIndex = '1002';
-    title.style.fontFamily = 'Segoe UI, Arial, Helvetica Neue, sans-serif';
-    title.style.fontWeight = '300';
-    title.style.fontSize = '2.2em';
-    title.style.letterSpacing = '0.04em';
-    title.style.color = '#0a3a5c';
-    title.style.textShadow = '0 0 18px #b3e0ff, 0 2px 0 #fff';
-    document.body.appendChild(title);
-    */
-
-	// Only show logo at first
-
-	// Function to shrink and move logo to top (never disappears)
+	// Transition loader screen to intro screen
 	function shrinkLogoToTopAndShowIntro() {
-		// Start playing water bubbles audio during intro
-		bubbleAudio.play().catch(e => console.log("Could not play bubbles audio:", e));
-		
-		// Fade background to game-like blue
-		var loadingCircle = document.getElementById("loadingCircle");
-		var loadingText = document.getElementById("loadingText");
-		if (loadingCircle) {
-			loadingCircle.style.transition = "opacity 0.5s ease-out";
-			loadingCircle.style.opacity = "0";
+		// Play bubbles audio
+		bubbleAudio.play().catch(e => console.log("Bubbles audio autoplay prevented:", e));
+
+		// Fade out loading container
+		if (loadingContainer) {
+			loadingContainer.style.opacity = "0";
 			setTimeout(() => {
-				if (loadingCircle.parentNode) {
-					loadingCircle.style.display = "none";
-				}
-			}, 500);
-		}
-		if (loadingText) {
-			loadingText.style.transition = "opacity 0.5s ease-out";
-			loadingText.style.opacity = "0";
-			setTimeout(() => {
-				if (loadingText.parentNode) {
-					loadingText.style.display = "none";
-				}
+				loadingContainer.style.display = "none";
 			}, 500);
 		}
 
-		// Animate logo up and shrink, keep visible at top
-		logo.style.maxWidth = "180px";
-		logo.style.maxHeight = "120px";
-		logo.style.top = "10%";
-		logo.style.left = "50%";
-		logo.style.transform = "translate(-50%, 0) scale(0.7)";
-		logo.style.filter = "drop-shadow(0 0 48px #b3e0ff) drop-shadow(0 0 24px #4a90e2)";
-		// Do NOT fade out the background here; keep it until Play is pressed
-		// Show text and play button after logo animates
+		// Fade out white background to show blue gradient
+		if (introBg) {
+			introBg.style.opacity = "0";
+			setTimeout(() => {
+				introBg.style.display = "none";
+			}, 800);
+		}
+
+		// Shrink and move logo
+		if (introLogo) {
+			introLogo.classList.add("loaded");
+		}
+
+		// Show intro text and play button
 		setTimeout(() => {
-			var text = document.createElement("div");
-			text.id = "introText";
-			text.style.position = "fixed";
-			text.style.top = "calc(10% + 120px)";
-			text.style.left = "50%";
-			text.style.transform = "translateX(-50%)";
-			text.style.opacity = "1";
-			text.style.zIndex = "1001";
-			// Default desktop width
-			text.style.width = "50vw";
-			text.style.maxWidth = "520px";
-			// Responsive: make wider on tablet and mobile
-			if (window.innerWidth <= 900) {
-				text.style.width = "85vw";
-				text.style.maxWidth = "96vw";
-				text.style.fontSize = "1.12em";
+			if (introContent) {
+				introContent.classList.add("show");
 			}
-			if (window.innerWidth <= 600) {
-				text.style.width = "98vw";
-				text.style.maxWidth = "99vw";
-				text.style.fontSize = "1em";
-			}
-			text.style.textAlign = "center";
-			text.style.fontFamily = "Segoe UI, Arial, Helvetica Neue, sans-serif";
-			text.style.fontWeight = "300";
-			text.style.color = "#0a3a5c";
-			text.style.background = "none";
-			text.style.border = "none";
-			text.style.borderRadius = "0";
-			text.style.boxShadow = "none";
-			text.style.padding = "0 10px";
-			text.style.letterSpacing = "0.01em";
-			text.style.textShadow = "0 4px 32px #b3e0ff, 0 2px 12px #4a90e2, 0 1px 0 #fff";
-			text.textContent =
-				"Brrr… it’s freezing in Antarctica! \n\n You’re a super-fast penguin mom racing across sliding icebergs to feed your hungry chick. \n\n Grab as many fish as you can, but watch out — an orca is waiting in the water, a polar bear is on the hunt, and plastic junk is everywhere. \n\n Don’t slip, don’t get caught, don’t stay too long in the icy water… and don’t be late!";
-			text.style.whiteSpace = "pre-line"; // makes \n show as a line break
-			document.body.appendChild(text);
-
-			var playBtn = document.createElement("img");
-			playBtn.src = "img/play.png";
-			playBtn.alt = "Play";
-			playBtn.id = "playBtn";
-			playBtn.style.position = "fixed";
-			playBtn.style.top = "calc(10% + 120px + " + (text.offsetHeight + 40) + "px)";
-			playBtn.style.left = "50%";
-			playBtn.style.transform = "translateX(-50%)";
-			playBtn.style.cursor = "pointer";
-			playBtn.style.zIndex = "1001";
-			playBtn.style.width = "220px";
-			playBtn.style.display = "block";
-			playBtn.style.filter = "drop-shadow(0 4px 16px #b3e0ff)";
-			playBtn.style.transition = "transform 0.3s ease";
-			// Add hover effect
-			playBtn.addEventListener("mouseover", () => {
-				playBtn.style.transform = "translate(-50%, 0) scale(1.1)";
-			});
-			playBtn.addEventListener("mouseout", () => {
-				playBtn.style.transform = "translateX(-50%)";
-			});
-			playBtn.addEventListener("click", function () {
-				// Start crossfade from bubbles to main music
-				if (bubbleAudio && !bubbleAudio.paused) {
-					// Fade out bubbles over 1 second
-					var bubbleFadeOut = setInterval(() => {
-						if (bubbleAudio.volume > 0.05) {
-							bubbleAudio.volume = Math.max(0, bubbleAudio.volume - 0.05);
-						} else {
-							bubbleAudio.pause();
-							bubbleAudio.volume = 0.6; // Reset for potential future use
-							clearInterval(bubbleFadeOut);
-						}
-					}, 50);
-				}
-
-				// Remove all intro elements (including white bg and loading elements)
-				bg.remove();
-				logo.remove();
-				text.remove();
-				playBtn.remove();
-
-				// Also remove loading elements if they still exist
-				var loadingCircle = document.getElementById("loadingCircle");
-				var loadingText = document.getElementById("loadingText");
-				if (loadingCircle) {
-					loadingCircle.remove();
-				}
-				if (loadingText) {
-					loadingText.remove();
-				}
-
-				// Use the existing game instance and start it properly
-				if (tempGame && tempGame.imagesReady) {
-					// Set the global game variable for restart functionality
-					window.game = tempGame;
-					tempGame.fromRestart = false; // Ensure it's treated as a fresh start
-					tempGame.timer.start(); // Start the timer
-					tempGame.startBackgroundMusic(); // Start background music
-					// Hide start screen and begin gameplay
-					const startScreen = document.getElementById("startScreen");
-					if (startScreen) {
-						startScreen.style.display = "none";
-					}
-				} else {
-					// Fallback: call the original startGame function
-					if (typeof startGame === "function") {
-						startGame();
-					}
-				}
-			});
-			document.body.appendChild(playBtn);
 		}, 700);
 	}
 
-	// Remove the manual trigger events since we now auto-trigger when images load
-	// The logo will automatically animate when images are ready
+	// Play button click handler
+	if (playBtn) {
+		playBtn.addEventListener("click", function () {
+			// Fade out bubbles audio over 1 second
+			if (bubbleAudio && !bubbleAudio.paused) {
+				var bubbleFadeOut = setInterval(() => {
+					if (bubbleAudio.volume > 0.05) {
+						bubbleAudio.volume = Math.max(0, bubbleAudio.volume - 0.05);
+					} else {
+						bubbleAudio.pause();
+						bubbleAudio.volume = 1;
+						clearInterval(bubbleFadeOut);
+					}
+				}, 50);
+			}
+
+			// Fade out the start screen completely
+			if (startScreen) {
+				startScreen.style.opacity = "0";
+				setTimeout(() => {
+					startScreen.style.display = "none";
+				}, 600);
+			}
+
+			// Start the game loop and timer
+			if (tempGame && tempGame.imagesReady) {
+				window.game = tempGame;
+				tempGame.fromRestart = false;
+				tempGame.gameState = "playing"; // Transition game state to playing
+				tempGame.timer.start(); // Start the timer
+				tempGame.startBackgroundMusic(); // Start background music
+				
+				// Show the HUD
+				if (typeof showGameHUD === "function") {
+					showGameHUD(true);
+				}
+			} else {
+				// Fallback
+				if (typeof startGame === "function") {
+					startGame();
+				}
+			}
+		});
+	}
 });
